@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   /** 2) Payload JSON déjà parsé par Vercel (sinon : JSON.parse(req.body) ) */
   const payload = req.body;
 
-  const nomDeCampagne = "Presque gratuit";
+  const nomDeCampagne = "Presque Gratuit";
   const etat = "Processed";
 
   
@@ -36,8 +36,8 @@ export default async function handler(req, res) {
   /** 3) Détecter les items "Location d'une raquette de padel" */
   const match = payload?.data?.items?.some(
     (item) =>
-      item?.name === nomDeCampagne &&
-      item?.state === etat
+      item?.name?.trim() === nomDeCampagne //&&
+      // item?.state === etat
   );
 
   console.log(`match = ${match}; campagneName = ${nomDeCampagne};`);
