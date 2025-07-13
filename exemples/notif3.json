@@ -1,0 +1,52 @@
+{
+  "data": {
+    "payer": {
+      "email": "fabien.benichou@gmail.com",
+      "country": "FRA",
+      "firstName": "Fabien",
+      "lastName": "Benichou"
+    },
+    "items": [
+      {
+        "name": "Presque Gratuit",
+        "user": {
+          "firstName": "Fab",
+          "lastName": "Beni"
+        },
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2025 : -0,50€",
+          "amount": 50
+        },
+        "ticketUrl": "https://www.helloasso.com/associations/annecy-tennis/evenements/test-pour-notification/ticket?ticketId=141215416&ag=141215416",
+        "qrCode": "MTQxMjE1NDE2OjYzODg3OTU2ODQ3NzM1MDQ0MA==",
+        "tierId": 17031500,
+        "id": 141215416,
+        "amount": 0,
+        "type": "Registration",
+        "initialAmount": 50,
+        "state": "Processed"
+      }
+    ],
+    "amount": {
+      "total": 0,
+      "vat": 0,
+      "discount": 50
+    },
+    "id": 141215416,
+    "date": "2025-07-12T22:40:47.735044+02:00",
+    "formSlug": "test-pour-notification",
+    "formType": "Event",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "meta": {
+      "createdAt": "2025-07-12T22:40:47.735044+02:00",
+      "updatedAt": "2025-07-12T22:40:47.9244464+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}

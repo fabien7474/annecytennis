@@ -1,0 +1,44 @@
+  data: {
+    order: {
+      id: 141212875,
+      date: '2025-07-12T21: 56: 32.5208503+02: 00',
+      formSlug: 'default',
+      formType: 'Checkout',
+      organizationName: 'Annecy Tennis',
+      organizationSlug: 'annecy-tennis',
+      organizationType: 'Association1901',
+      organizationIsUnderColucheLaw: false,
+      formName: 'Checkout',
+      meta: [Object
+        ],
+      isAnonymous: false,
+      isAmountHidden: false
+    },
+    payer: {
+      email: 'galvane.francis@gmail.com',
+      address: '2 place Saint Maurice 74000',
+      city: 'Annecy',
+      zipCode: '74000',
+      country: 'FRA',
+      firstName: 'Francis',
+      lastName: 'Galvane'
+    },
+    items: [
+        [Object
+        ]
+    ],
+    cashOutState: 'Transfered',
+    paymentReceiptUrl: 'https: //www.helloasso.com/associations/annecy-tennis/checkout/paiement-attestation/141212875',
+    id: 64188280,
+    amount: 800,
+    date: '2025-07-12T21: 56: 32.5208503+02: 00',
+    paymentMeans: 'Card',
+    installmentNumber: 1,
+    state: 'Authorized',
+    meta: {
+      createdAt: '2025-07-12T21: 56: 07.6202311+02: 00',
+      updatedAt: '2025-07-12T21: 56: 32.5366667+02: 00'
+    },
+    refundOperations: []
+},
+  eventType: 'Payment'

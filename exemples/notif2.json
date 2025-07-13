@@ -1,0 +1,32 @@
+HelloAsso : {
+  data: {
+    payer: {
+      email: 'galvane.francis@gmail.com',
+      address: '2 place Saint Maurice 74000',
+      city: 'Annecy',
+      zipCode: '74000',
+      country: 'FRA',
+      firstName: 'Francis',
+      lastName: 'Galvane'
+    },
+    items: [ [Object] ],
+    payments: [ [Object] ],
+    amount: { total: 800, vat: 0, discount: 0 },
+    id: 141212875,
+    date: '2025-07-12T21:56:32.5208503+02:00',
+    formSlug: 'default',
+    formType: 'Checkout',
+    organizationName: 'Annecy Tennis',
+    organizationSlug: 'annecy-tennis',
+    organizationType: 'Association1901Rig',
+    organizationIsUnderColucheLaw: false,
+    checkoutIntentId: 3626828,
+    meta: {
+      createdAt: '2025-07-12T21:56:07.6202311+02:00',
+      updatedAt: '2025-07-12T21:56:32.6329904+02:00'
+    },
+    isAnonymous: false,
+    isAmountHidden: false
+  },
+  eventType: 'Order'
+}

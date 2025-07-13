@@ -1,0 +1,62 @@
+{
+  "data": {
+    "payer": {
+      "email": "fabien.benichou@gmail.com",
+      "country": "FRA",
+      "firstName": "Fabien",
+      "lastName": "Benichou"
+    },
+    "items": [
+      {
+        "name": "Location d'une raquette de padel",
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2025 : -5,00€",
+          "amount": 500
+        },
+        "qrCode": "MTQxMjE3OTQ2OjYzODg3OTU5NjE1Nzc2ODIzOQ==",
+        "tierId": 16987683,
+        "id": 141217946,
+        "amount": 0,
+        "type": "Product",
+        "initialAmount": 500,
+        "state": "Processed"
+      },
+      {
+        "name": "Location d'une raquette de padel",
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2025 : -5,00€",
+          "amount": 500
+        },
+        "qrCode": "MTQxMjE3OTQ3OjYzODg3OTU5NjE1Nzc2ODIzOQ==",
+        "tierId": 16987683,
+        "id": 141217947,
+        "amount": 0,
+        "type": "Product",
+        "initialAmount": 500,
+        "state": "Processed"
+      }
+    ],
+    "amount": {
+      "total": 0,
+      "vat": 0,
+      "discount": 1000
+    },
+    "id": 141217946,
+    "date": "2025-07-12T23:26:55.7768239+02:00",
+    "formSlug": "location-de-raquettes-de-padel",
+    "formType": "Shop",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "meta": {
+      "createdAt": "2025-07-12T23:26:55.7768239+02:00",
+      "updatedAt": "2025-07-12T23:26:55.9768539+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}
