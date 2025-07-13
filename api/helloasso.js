@@ -8,6 +8,7 @@
  */
 
 import nodemailer from "nodemailer";
+import util from "util";
 
 export default async function handler(req, res) {
   // 1) Refuser tout sauf POST
