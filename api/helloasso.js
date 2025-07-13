@@ -18,20 +18,31 @@ export default async function handler(req, res) {
   /** 2) Payload JSON déjà parsé par Vercel (sinon : JSON.parse(req.body) ) */
   const payload = req.body;
 
-  const campagneName = "Presque gratuit";
+  const nomDeCampagne = "Presque gratuit";
+  const etat = "Processed";
 
+  
+  // 2.1) Liste détaillée de chaque item (nom, état, tierId, etc.)
+  if (Array.isArray(payload?.data?.items)) {
+    payload.data.items.forEach((item, idx) => {
+      console.log(`\nItem #${idx}:`);
+      console.log(util.inspect(item, { depth: null, colors: true }));
+    });
+  } else {
+    console.log("items est absent ou n'est pas un tableau");
+  }
+  
   /** 3) Détecter les items "Location d'une raquette de padel" */
   const match = payload?.data?.items?.some(
     (item) =>
-      item?.name === campagneName &&
-      item?.state === "Processed"
-      // Number(item?.tierId) === 16987683 ou 17031500
+      item?.name === nomDeCampagne &&
+      item?.state === etat
   );
 
-  console.log(`match = ${match}; campagneName = ${campagneName};`);
+  console.log(`match = ${match}; campagneName = ${nomDeCampagne};`);
 
   const payoadJson = JSON.stringify(payload, null, 2);
-  
+
   if (!match) {
     // Rien à faire : on répond 200 pour ne pas que HelloAsso retente
     console.log("Notification non traitée :", payoadJson);
@@ -69,7 +80,7 @@ export default async function handler(req, res) {
       subject: "Votre code pour Annecy Tennis",
       text: `Bonjour,
 
-Nous avons bien enregistré votre « ${campagneName} ».
+Nous avons bien enregistré votre « ${nomDeCampagne} ».
 
 Voici votre code personnel : ${code}
 
