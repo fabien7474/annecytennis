@@ -18,18 +18,17 @@ export default async function handler(req, res) {
   /** 2) Payload JSON déjà parsé par Vercel (sinon : JSON.parse(req.body) ) */
   const payload = req.body;
 
-  const campagneName = "Location d'une raquette de padel";
+  const campagneName = "Presque gratuit";
 
   /** 3) Détecter les items "Location d'une raquette de padel" */
   const match = payload?.data?.items?.some(
     (item) =>
       item?.name === campagneName &&
-      item?.state === "Processed" &&
-      Number(item?.tierId) === 16987683
+      item?.state === "Processed"
+      // Number(item?.tierId) === 16987683 ou 17031500
   );
 
   const payoadJson = JSON.stringify(payload, null, 2);
-
   if (!match) {
     // Rien à faire : on répond 200 pour ne pas que HelloAsso retente
     console.log("Notification non traitée :", payoadJson);
