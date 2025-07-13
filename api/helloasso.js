@@ -28,7 +28,10 @@ export default async function handler(req, res) {
       // Number(item?.tierId) === 16987683 ou 17031500
   );
 
+  console.log(`match = ${match}; campagneName = ${campagneName};`);
+
   const payoadJson = JSON.stringify(payload, null, 2);
+  
   if (!match) {
     // Rien à faire : on répond 200 pour ne pas que HelloAsso retente
     console.log("Notification non traitée :", payoadJson);
