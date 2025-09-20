@@ -67,7 +67,7 @@ export default async function handler(req, res) {
       subject: "Votre code pour la location de raquettes de padel",
       text: `Bonjour,
 
-Nous avons bien enregistré votre « ${nomDeCampagne} ».
+Nous avons bien enregistré votre « ${nameItem} ».
 
 Voici votre code personnel : ${code}.
 
@@ -88,7 +88,7 @@ Le club Annecy Tennis`,
   return res.status(200).json({ sent: true });
 
   function logMatchAndPayload() {
-    console.log(`match = ${match}; campagneName = ${nomDeCampagne};`);
+    console.log(`match = ${match}; campagneName = ${nameItem};`);
     const payoadJson = JSON.stringify(payload, null, 2);
     if (!match) {
       // Rien à faire : on répond 200 pour ne pas que HelloAsso retente
