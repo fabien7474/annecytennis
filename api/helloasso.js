@@ -8,7 +8,6 @@
  */
 
 import nodemailer from "nodemailer";
-import { logItems, detectItem } from "./utils.js";
 import { SMTP_CONFIG } from './smtpConfig.js';
 
 export default async function handler(req, res) {
@@ -23,8 +22,16 @@ export default async function handler(req, res) {
   logItems(payload?.data?.items);
 
   // 3) Detect specific items
-  const nomDeCampagne = "Location de raquettes de padel";
-  const match = detectItem(payload?.data?.items, nomDeCampagne);
+  const nameItem = "Location d'une raquette de padel";
+  const idItem = 149140335;
+  const tierIdItem = 16987683;
+  const stateItem = "Processed";
+  const match = payload?.data?.items?.some((item) =>
+    item?.name?.trim() === nameItem &&
+    item?.id === idItem &&
+    item?.tierId === tierIdItem &&
+    item?.state === stateItem
+  );
   logMatchAndPayload();
   if (!match) {
     return res.status(200).json({ ignored: true });
@@ -70,7 +77,7 @@ Le club Annecy Tennis`,
     });
 
     console.log(`E‑mail envoyé à ${email} (code : ${code})`);
-    
+
   } catch (err) {
     console.error("Erreur d’envoi d’e‑mail :", err);
     return res.status(500).json({ error: "Email not sent" });
@@ -89,4 +96,20 @@ Le club Annecy Tennis`,
       console.log("Notification à traiter :", payoadJson);
     }
   }
+
+  /**
+ * Logs detailed information about items.
+ * @param {Array} items - Array of items to log.
+ */
+  function logItems(items) {
+    if (Array.isArray(items)) {
+      items.forEach((item, idx) => {
+        console.log(`\nItem #${idx}:`);
+        console.log(util.inspect(item, { depth: null, colors: true }));
+      });
+    } else {
+      console.log("items est absent ou n'est pas un tableau");
+    }
+  }
+
 }
