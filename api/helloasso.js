@@ -9,6 +9,7 @@
 
 import nodemailer from "nodemailer";
 import { SMTP_CONFIG } from './smtpConfig.js';
+import util from "util";
 
 export default async function handler(req, res) {
 
