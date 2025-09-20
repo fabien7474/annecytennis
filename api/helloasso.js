@@ -24,12 +24,10 @@ export default async function handler(req, res) {
 
   // 3) Detect specific items
   const nameItem = "Location d'une raquette de padel";
-  const idItem = 149140335;
-  const tierIdItem = 16987683;
+  const tierIdItem = 16987683; //16987683
   const stateItem = "Processed";
   const match = payload?.data?.items?.some((item) =>
     item?.name?.trim() === nameItem &&
-    item?.id === idItem &&
     item?.tierId === tierIdItem &&
     item?.state === stateItem
   );
