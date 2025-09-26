@@ -91,13 +91,13 @@ export default async function handler(req, res) {
     return data.access_token;
   }
   console.log("Igloohome access token obtenu");
-  
+
   // Création du code PIN horaire via l’API Igloohome
   const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDate);
   async function createHourlyPin(accessToken, deviceId, startDate) {
     // Valid for 6 hours
     const endDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
-    
+
     // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
     function formatIglooDate(date) {
       const pad = n => n.toString().padStart(2, '0');
@@ -118,14 +118,14 @@ export default async function handler(req, res) {
     const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
       method: "POST",
       headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-      variance: 1,
-      startDate: formatIglooDate(startDate),
-      endDate: formatIglooDate(endDate),
-      accessName: "Annecy Tennis",
+        variance: 1,
+        startDate: formatIglooDate(startDate),
+        endDate: formatIglooDate(endDate),
+        accessName: "Annecy Tennis",
       }),
     });
 
