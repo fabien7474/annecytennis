@@ -69,10 +69,11 @@ export default async function handler(req, res) {
   const startDate = parse(dateStr, "dd/MM/yyyy HH:mm", new Date());
 
 
-  // 5) Générer un code
-  const token = await getIgloohomeToken();
-
-  async function getIgloohomeToken() {
+  // 5) Générer un code PIN
+  
+  // Récupération du token OAuth2 pour l’API Igloohome
+  const accessToken = await getIgloohomeAccessToken();
+  async function getIgloohomeAccessToken() {
     const resp = await fetch("https://auth.igloohome.co/oauth2/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -89,10 +90,32 @@ export default async function handler(req, res) {
     }
     return data.access_token;
   }
+  // Création du code PIN horaire via l’API Igloohome
+  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDate);
+  async function createHourlyPin(accessToken, deviceId, startDate) {
+    // Valid for 6 hours
+    const endDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
 
-  const code = Math.floor(1000 + Math.random() * 9000).toString();
+    const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        starts_at: startDate.toISOString(),
+        ends_at: endDate.toISOString(),
+      }),
+    });
 
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(`PIN creation failed: ${resp.status} ${JSON.stringify(data)}`);
+    }
 
+    // Response usually contains the generated pin
+    return data.code;
+  }
 
   // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
   const transporter = nodemailer.createTransport({
@@ -109,20 +132,25 @@ export default async function handler(req, res) {
     await transporter.sendMail({
       from: process.env.FROM_EMAIL,
       to: email,
-      subject: "Votre code pour la location de raquettes de padel",
+      subject: "Votre code PIN pour la location de raquettes de padel",
       text: `Bonjour,
 
 Nous avons bien enregistré votre « ${nameItem} ».
 
-Voici votre code personnel : ${code}.
+Voici votre code PIN associé à votre réservation  : ${codePin}.
 
 Ce code unique vous permet d'ouvrir le cadenas électronique pour récupérer la clé des raquettes de location.
 
+Nous vous remercions de bien vouloir rapporter les raquettes à la fin de votre créneau de location et de refermer le cadenas (avec le même code pin). 
+
 À très bientôt sur les pistes !
+
+Sportivement,
+
 Le club Annecy Tennis`,
     });
 
-    console.log(`E‑mail envoyé à ${email} (code : ${code})`);
+    console.log(`E‑mail envoyé à ${email} (codePin: ${codePin})`);
 
   } catch (err) {
     console.error("Erreur d’envoi d’e‑mail :", err);

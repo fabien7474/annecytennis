@@ -3,6 +3,8 @@
     "version": "1.0.0",
     "type": "module",
     "dependencies": {
-        "nodemailer": "^6.9.9"
+        "nodemailer": "^6.9.9",
+        "date-fns": "^2.30.0",
+        "node-fetch": "^3.3.2"
     }
 }
