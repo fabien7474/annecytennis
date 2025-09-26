@@ -120,6 +120,8 @@ export default async function handler(req, res) {
       return `${year}-${month}-${day}T${hour}:00:00${sign}${tzHour}:${tzMin}`;
     }
 
+    // log the request details
+    console.log(`Creating PIN for device ${deviceId} from ${formatIglooDate(startDate)} to ${formatIglooDate(endDate)}`);
     const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
       method: "POST",
       headers: {
@@ -139,8 +141,11 @@ export default async function handler(req, res) {
       throw new Error(`PIN creation failed: ${resp.status} ${JSON.stringify(data)}`);
     }
 
+    // log the response details
+    console.log(`Igloohome response: ${JSON.stringify(data)}`);
+
     // Response usually contains the generated pin
-    return data.code;
+    return data.pin;
   }
   console.log(`Code PIN généré : ${codePin}`);
 
