@@ -144,7 +144,10 @@ export default async function handler(req, res) {
     // log the response details
     console.log(`Igloohome response: ${JSON.stringify(data)}`);
 
-    // Response usually contains the generated pin
+    // Verify that the pin exists in the response and contains 9 digits
+    if (!data.pin || !/^\d{9}$/.test(data.pin)) {
+      throw new Error(`Unexpected PIN format: ${JSON.stringify(data)}`);
+    }
     return data.pin;
   }
   console.log(`Code PIN généré : ${codePin}`);
