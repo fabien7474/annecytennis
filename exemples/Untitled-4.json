@@ -1,0 +1,73 @@
+Notification non traitée : {
+  "data": {
+    "payer": {
+      "email": "fabien7474@gmail.com",
+      "country": "FRA",
+      "firstName": "Fab",
+      "lastName": "Benic"
+    },
+    "items": [
+      {
+        "name": "Location d'une raquette de padel",
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2026 : -5,00€",
+          "amount": 500
+        },
+        "customFields": [
+          {
+            "id": 6055810,
+            "name": "Téléphone",
+            "type": "Phone",
+            "answer": "0683481770"
+          },
+          {
+            "id": 6055807,
+            "name": "Jour de la location",
+            "type": "Date",
+            "answer": "20/09/2025"
+          },
+          {
+            "id": 6055791,
+            "name": "Début de la location",
+            "type": "ChoiceList",
+            "answer": "12:30"
+          },
+          {
+            "id": 6055809,
+            "name": "Piste réservée",
+            "type": "ChoiceList",
+            "answer": "Padel 1"
+          }
+        ],
+        "qrCode": "MTQ5MTQwMzM1OjYzODk0MDA0NTU3MTgwOTQwMA==",
+        "tierId": 16987683,
+        "id": 149140335,
+        "amount": 0,
+        "type": "Product",
+        "initialAmount": 500,
+        "state": "Processed"
+      }
+    ],
+    "amount": {
+      "total": 0,
+      "vat": 0,
+      "discount": 500
+    },
+    "id": 149140335,
+    "date": "2025-09-20T22:35:57.18094+02:00",
+    "formSlug": "location-de-raquettes-de-padel",
+    "formType": "Shop",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "meta": {
+      "createdAt": "2025-09-20T22:35:57.18094+02:00",
+      "updatedAt": "2025-09-20T22:35:57.6162553+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}

@@ -1,0 +1,75 @@
+Notification non traitée : {
+  "data": {
+    "payer": {
+      "email": "cdambricourt74@yahoo.fr",
+      "address": "440 Route de Tavan",
+      "city": "Saint-Jorioz",
+      "zipCode": "74410",
+      "country": "FRA",
+      "firstName": "keyan",
+      "lastName": "DAMBRICOURT"
+    },
+    "items": [
+      {
+        "payments": [
+          {
+            "id": 68584389,
+            "shareAmount": 1000
+          }
+        ],
+        "name": "Ticket à l’unité DAMBRICOURT keyan",
+        "priceCategory": "Fixed",
+        "qrCode": "MTQ5MTM3MzQwOjYzODk0MDAyNjA0MTIyODMyNg==",
+        "id": 149137340,
+        "amount": 1000,
+        "type": "Payment",
+        "state": "Processed"
+      }
+    ],
+    "payments": [
+      {
+        "items": [
+          {
+            "id": 149137340,
+            "shareAmount": 1000,
+            "shareItemAmount": 1000
+          }
+        ],
+        "cashOutState": "Transfered",
+        "paymentReceiptUrl": "https://www.helloasso.com/associations/annecy-tennis/checkout/paiement-attestation/149137340",
+        "id": 68584389,
+        "amount": 1000,
+        "date": "2025-09-20T22:04:13.3739551+02:00",
+        "paymentMeans": "Card",
+        "installmentNumber": 1,
+        "state": "Authorized",
+        "meta": {
+          "createdAt": "2025-09-20T22:03:24.1228326+02:00",
+          "updatedAt": "2025-09-20T22:04:13.4066667+02:00"
+        },
+        "refundOperations": []
+      }
+    ],
+    "amount": {
+      "total": 1000,
+      "vat": 0,
+      "discount": 0
+    },
+    "id": 149137340,
+    "date": "2025-09-20T22:04:13.3739551+02:00",
+    "formSlug": "default",
+    "formType": "Checkout",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "checkoutIntentId": 4404904,
+    "meta": {
+      "createdAt": "2025-09-20T22:03:24.1228326+02:00",
+      "updatedAt": "2025-09-20T22:04:13.4933196+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}

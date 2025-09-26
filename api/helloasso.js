@@ -10,6 +10,8 @@
 import nodemailer from "nodemailer";
 import { SMTP_CONFIG } from './smtpConfig.js';
 import util from "util";
+import { parse } from "date-fns";
+import fetch from "node-fetch";
 
 export default async function handler(req, res) {
 
@@ -22,16 +24,26 @@ export default async function handler(req, res) {
   const payload = req.body;
   logItems(payload?.data?.items);
 
-  // 3) Detect specific items
+  // 3) Extract item "Location d'une raquette de padel"
   const nameItem = "Location d'une raquette de padel";
-  const tierIdItem = 16987683; //16987683
+  const tierIdItem = 16987683;
   const stateItem = "Processed";
-  const match = payload?.data?.items?.some((item) =>
+  const matchedItem = payload?.data?.items?.find((item) =>
     item?.name?.trim() === nameItem &&
     item?.tierId === tierIdItem &&
     item?.state === stateItem
   );
-  logMatchAndPayload();
+  const match = Boolean(matchedItem);
+
+  // Logging pour debug
+  console.log(`match = ${match}; campagneName = ${nameItem};`);
+  const payoadJson = JSON.stringify(payload, null, 2);
+  if (!match) {
+    console.log("Notification non traitée :", payoadJson);
+  } else {
+    console.log("Notification à traiter :", payoadJson);
+  }
+
   if (!match) {
     return res.status(200).json({ ignored: true });
   }
@@ -43,11 +55,46 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: "Email manquant" });
   }
 
-  // 5) Générer un code aléatoire à 4 chiffres (1000‑9999)
+  // 4b) Récupérer la date et heure de la location
+  const customFields = matchedItem?.customFields || [];
+  const dayField = customFields.find(f => f.name === "Jour de la location");
+  const timeField = customFields.find(f => f.name === "Début de la location");
+
+  if (!dayField || !timeField) {
+    throw new Error("Missing custom fields Jour/Heure in payload");
+  }
+
+  // Example formats: "20/09/2022" and "07:30"
+  const dateStr = `${dayField.answer} ${timeField.answer}`;
+  const startDate = parse(dateStr, "dd/MM/yyyy HH:mm", new Date());
+
+
+  // 5) Générer un code
+  const token = await getIgloohomeToken();
+
+  async function getIgloohomeToken() {
+    const resp = await fetch("https://auth.igloohome.co/oauth2/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: process.env.IGLOO_CLIENT_ID,
+        client_secret: process.env.IGLOO_CLIENT_SECRET,
+      }),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) {
+      throw new Error(`OAuth2 failed: ${resp.status} ${JSON.stringify(data)}`);
+    }
+    return data.access_token;
+  }
+
   const code = Math.floor(1000 + Math.random() * 9000).toString();
 
-  // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
 
+
+  // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
   const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: Number(SMTP_CONFIG.port || 587),
@@ -84,17 +131,6 @@ Le club Annecy Tennis`,
 
   // 7) Répondre à HelloAsso
   return res.status(200).json({ sent: true });
-
-  function logMatchAndPayload() {
-    console.log(`match = ${match}; campagneName = ${nameItem};`);
-    const payoadJson = JSON.stringify(payload, null, 2);
-    if (!match) {
-      // Rien à faire : on répond 200 pour ne pas que HelloAsso retente
-      console.log("Notification non traitée :", payoadJson);
-    } else {
-      console.log("Notification à traiter :", payoadJson);
-    }
-  }
 
   /**
  * Logs detailed information about items.
