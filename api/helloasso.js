@@ -90,23 +90,42 @@ export default async function handler(req, res) {
     }
     return data.access_token;
   }
+  console.log("Igloohome access token obtenu");
+  
   // Création du code PIN horaire via l’API Igloohome
   const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDate);
   async function createHourlyPin(accessToken, deviceId, startDate) {
     // Valid for 6 hours
     const endDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
+    
+    // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
+    function formatIglooDate(date) {
+      const pad = n => n.toString().padStart(2, '0');
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      const hour = pad(date.getHours());
+      // Always set minutes and seconds to 00
+      // Get timezone offset in +hh:mm or -hh:mm
+      const tz = -date.getTimezoneOffset();
+      const sign = tz >= 0 ? '+' : '-';
+      const absTz = Math.abs(tz);
+      const tzHour = pad(Math.floor(absTz / 60));
+      const tzMin = pad(absTz % 60);
+      return `${year}-${month}-${day}T${hour}:00:00${sign}${tzHour}:${tzMin}`;
+    }
 
     const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        variance: 1,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        accessName: "Annecy Tennis",
+      variance: 1,
+      startDate: formatIglooDate(startDate),
+      endDate: formatIglooDate(endDate),
+      accessName: "Annecy Tennis",
       }),
     });
 
@@ -118,6 +137,7 @@ export default async function handler(req, res) {
     // Response usually contains the generated pin
     return data.code;
   }
+  console.log(`Code PIN généré : ${codePin}`);
 
   // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
   const transporter = nodemailer.createTransport({
