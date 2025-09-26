@@ -14,6 +14,11 @@ import { parse } from "date-fns";
 import fetch from "node-fetch";
 
 export default async function handler(req, res) {
+  // 0 Sortir si pas enabled
+  if (!process.env.ENABLE_CODE_PIN_GENERATION || process.env.ENABLE_CODE_PIN_GENERATION !== "1") {
+    return res.status(503).json({ message: "API désactivée" });
+  }
+
 
   // 1) Refuser tout sauf POST
   if (req.method !== "POST") {
