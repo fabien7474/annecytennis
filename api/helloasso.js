@@ -70,7 +70,7 @@ export default async function handler(req, res) {
 
 
   // 5) Générer un code PIN
-  
+
   // Récupération du token OAuth2 pour l’API Igloohome
   const accessToken = await getIgloohomeAccessToken();
   async function getIgloohomeAccessToken() {
@@ -103,8 +103,10 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        starts_at: startDate.toISOString(),
-        ends_at: endDate.toISOString(),
+        variance: 1,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        accessName: "Annecy Tennis",
       }),
     });
 
