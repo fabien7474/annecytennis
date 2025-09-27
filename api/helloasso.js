@@ -10,8 +10,8 @@
 import nodemailer from "nodemailer";
 import util from "util";
 import { parse } from "date-fns";
-import fetch from "node-fetch";
 import { zonedTimeToUtc } from "date-fns-tz";
+import fetch from "node-fetch";
 
 export default async function handler(req, res) {
   // 0 Sortir si pas enabled
