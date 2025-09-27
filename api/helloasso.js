@@ -11,6 +11,7 @@ import nodemailer from "nodemailer";
 import util from "util";
 import { parse } from "date-fns";
 import fetch from "node-fetch";
+import { zonedTimeToUtc } from "date-fns-tz";
 
 export default async function handler(req, res) {
   // 0 Sortir si pas enabled
@@ -63,15 +64,14 @@ export default async function handler(req, res) {
   const customFields = matchedItem?.customFields || [];
   const dayField = customFields.find(f => f.name === "Jour de la location");
   const timeField = customFields.find(f => f.name === "Début de la location");
-
   if (!dayField || !timeField) {
     throw new Error("Missing custom fields Jour/Heure in payload");
   }
-
   // Example formats: "20/09/2022" and "07:30"
   const dateStr = `${dayField.answer} ${timeField.answer}`;
-  const startDate = parse(dateStr, "dd/MM/yyyy HH:mm", new Date());
-
+  // Parse the date in Paris timezone (Europe/Paris)
+  const startDateLocal = parse(dateStr, "dd/MM/yyyy HH:mm", new Date());
+  const startDateUtc = zonedTimeToUtc(startDateLocal, "Europe/Paris");
 
   // 5) Générer un code PIN
 
@@ -97,30 +97,24 @@ export default async function handler(req, res) {
   console.log("Igloohome access token obtenu");
 
   // Création du code PIN horaire via l’API Igloohome
-  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDate);
-  async function createHourlyPin(accessToken, deviceId, startDate) {
+  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDateUtc);
+  async function createHourlyPin(accessToken, deviceId, startDateUtc) {
     // Valid for 6 hours
-    const endDate = new Date(startDate.getTime() + 6 * 60 * 60 * 1000);
+    const endDate = new Date(startDateUtc.getTime() + 6 * 60 * 60 * 1000);
 
     // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
-    function formatIglooDate(date) {
+    function formatIglooDate(dateUtc) {
       const pad = n => n.toString().padStart(2, '0');
-      const year = date.getFullYear();
-      const month = pad(date.getMonth() + 1);
-      const day = pad(date.getDate());
-      const hour = pad(date.getHours());
+      const year = dateUtc.getFullYear();
+      const month = pad(dateUtc.getMonth() + 1);
+      const day = pad(dateUtc.getDate());
+      const hour = pad(dateUtc.getHours());
       // Always set minutes and seconds to 00
-      // Get timezone offset in +hh:mm or -hh:mm
-      const tz = -date.getTimezoneOffset();
-      const sign = tz >= 0 ? '+' : '-';
-      const absTz = Math.abs(tz);
-      const tzHour = pad(Math.floor(absTz / 60));
-      const tzMin = pad(absTz % 60);
-      return `${year}-${month}-${day}T${hour}:00:00${sign}${tzHour}:${tzMin}`;
+      return `${year}-${month}-${day}T${hour}:00:00+00:00`;
     }
 
     // log the request details
-    console.log(`Creating PIN for device ${deviceId} from ${formatIglooDate(startDate)} to ${formatIglooDate(endDate)}`);
+    console.log(`Creating PIN for device ${deviceId} from ${formatIglooDate(startDateUtc)} to ${formatIglooDate(endDate)}`);
     const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
       method: "POST",
       headers: {
@@ -129,7 +123,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         variance: 1,
-        startDate: formatIglooDate(startDate),
+        startDate: formatIglooDate(startDateUtc),
         endDate: formatIglooDate(endDate),
         accessName: "Annecy Tennis",
       }),
