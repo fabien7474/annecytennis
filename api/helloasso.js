@@ -8,7 +8,6 @@
  */
 
 import nodemailer from "nodemailer";
-import { SMTP_CONFIG } from './smtpConfig.js';
 import util from "util";
 import { parse } from "date-fns";
 import fetch from "node-fetch";
@@ -153,6 +152,13 @@ export default async function handler(req, res) {
   console.log(`Code PIN généré : ${codePin}`);
 
   // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
+  const SMTP_CONFIG = {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    fromEmail: process.env.FROM_EMAIL,
+  };
   const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: Number(SMTP_CONFIG.port || 587),
@@ -164,25 +170,30 @@ export default async function handler(req, res) {
   });
 
   try {
+    // Format date and time for email (ex: "20/09/2022 à 07:30")
+    const locationDateStr = `${dayField.answer} à ${timeField.answer}`;
+
     await transporter.sendMail({
       from: process.env.FROM_EMAIL,
       to: email,
       subject: "Votre code PIN pour la location de raquettes de padel",
       text: `Bonjour,
 
-Nous avons bien enregistré votre « ${nameItem} ».
+  Nous avons bien enregistré votre « ${nameItem} ».
 
-Voici votre code PIN associé à votre réservation  : ${codePin}.
+  Date et heure de la location : ${locationDateStr}
 
-Ce code unique vous permet d'ouvrir le cadenas électronique pour récupérer la clé des raquettes de location.
+  Voici votre code PIN associé à votre réservation : ${codePin}.
 
-Nous vous remercions de bien vouloir rapporter les raquettes à la fin de votre créneau de location et de refermer le cadenas (avec le même code pin). 
+  Ce code unique vous permet d'ouvrir le cadenas électronique pour récupérer la clé des raquettes de location.
 
-À très bientôt sur les pistes !
+  Nous vous remercions de bien vouloir rapporter les raquettes à la fin de votre créneau de location et de refermer le cadenas (avec le même code pin). 
 
-Sportivement,
+  À très bientôt sur les pistes !
 
-Le club Annecy Tennis`,
+  Sportivement,
+
+  Le club Annecy Tennis`,
     });
 
     console.log(`E‑mail envoyé à ${email} (codePin: ${codePin})`);
