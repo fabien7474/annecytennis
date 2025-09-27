@@ -9,9 +9,11 @@
 
 import nodemailer from "nodemailer";
 import util from "util";
-import { parse } from "date-fns";
-import { zonedTimeToUtc } from "date-fns-tz";
 import fetch from "node-fetch";
+import { parse } from "date-fns";
+import * as dateFnsTz from "date-fns-tz";
+const { zonedTimeToUtc } = dateFnsTz;
+
 
 export default async function handler(req, res) {
   // 0 Sortir si pas enabled
