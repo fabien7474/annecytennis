@@ -186,7 +186,14 @@ export default async function handler(req, res) {
 
   Voici votre code PIN associé à votre réservation : ${codePin}.
 
-  Ce code unique vous permet d'ouvrir le cadenas électronique pour récupérer la clé des raquettes de location.
+  Voici les instructions pour utiliser les raquettes de padel :
+  1- Allez au local matériel (à côté du panneau des lumières)
+  2- Sur le coffret électronique, entrez le code PIN à 9 chiffres : ${codePin}, appuyez sur l'icone de dévérouillage pour valider, tirez sur le cadenas pour l’ouvrir et récupérer la clé du placard à raquettes
+  3- Ouvrez le placard avec la clé et prenez la ou les raquettes de padel que vous avez réservées
+  4- Remettez la clé dans le coffret et refermez-le
+  5- À la fin de votre créneau de location, remettez les raquettes dans le placard et refermez le coffret (avec le même code PIN)
+
+  Ce code unique vous permet d'ouvrir le coffret électronique pour récupérer la clé des raquettes de location.
 
   Nous vous remercions de bien vouloir rapporter les raquettes à la fin de votre créneau de location et de refermer le cadenas (avec le même code pin). 
 
