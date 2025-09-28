@@ -91,12 +91,13 @@ export default async function handler(req, res) {
     throw new Error("Missing custom fields Jour/Heure in payload");
   }
   const [day, month, year] = dayField.answer.split("/").map(Number);
-  const hour = Number(timeField.answer.split(":")[0]);
+  const [hour, minute] = timeField.answer.split(":").map(Number);
+  const hour2 = (minute === 0) ? hour - 1 : hour;
   const timeZone = "Europe/Paris"; // Paris timezone
-  const startLocalDate = new Date(year, month - 1, day, hour, 0, 0);
+  const startLocalDate = new Date(year, month - 1, day, hour2, 0, 0);
   const startDateParisTZ = fromZonedTime(startLocalDate, timeZone);
-  // Valid for 6 hours
-  const endLocalDate = new Date(startLocalDate.getTime() + 6 * 60 * 60 * 1000);
+  // Valid for 5 hours
+  const endLocalDate = new Date(startLocalDate.getTime() + 5 * 60 * 60 * 1000);
   const endDateParisTZ = fromZonedTime(endLocalDate, timeZone);
 
   const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDateParisTZ, endDateParisTZ);
