@@ -10,10 +10,8 @@
 import nodemailer from "nodemailer";
 import util from "util";
 import fetch from "node-fetch";
-import { parse } from "date-fns";
-import * as dateFnsTz from "date-fns-tz";
-const { zonedTimeToUtc } = dateFnsTz;
-
+import * as dateFnsTz from 'date-fns-tz';
+const { fromZonedTime } = dateFnsTz;
 
 export default async function handler(req, res) {
   // 0 Sortir si pas enabled
@@ -62,19 +60,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ message: "Email manquant" });
   }
 
-  // 4b) Récupérer la date et heure de la location
-  const customFields = matchedItem?.customFields || [];
-  const dayField = customFields.find(f => f.name === "Jour de la location");
-  const timeField = customFields.find(f => f.name === "Début de la location");
-  if (!dayField || !timeField) {
-    throw new Error("Missing custom fields Jour/Heure in payload");
-  }
-  // Example formats: "20/09/2022" and "07:30"
-  const dateStr = `${dayField.answer} ${timeField.answer}`;
-  // Parse the date in Paris timezone (Europe/Paris)
-  const startDateLocal = parse(dateStr, "dd/MM/yyyy HH:mm", new Date());
-  const startDateUtc = zonedTimeToUtc(startDateLocal, "Europe/Paris");
-
   // 5) Générer un code PIN
 
   // Récupération du token OAuth2 pour l’API Igloohome
@@ -99,24 +84,43 @@ export default async function handler(req, res) {
   console.log("Igloohome access token obtenu");
 
   // Création du code PIN horaire via l’API Igloohome
-  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDateUtc);
-  async function createHourlyPin(accessToken, deviceId, startDateUtc) {
-    // Valid for 6 hours
-    const endDate = new Date(startDateUtc.getTime() + 6 * 60 * 60 * 1000);
+  const customFields = matchedItem?.customFields || [];
+  const dayField = customFields.find(f => f.name === "Jour de la location");
+  const timeField = customFields.find(f => f.name === "Début de la location");
+  if (!dayField || !timeField) {
+    throw new Error("Missing custom fields Jour/Heure in payload");
+  }
+  const [day, month, year] = dayField.answer.split("/").map(Number);
+  const hour = Number(timeField.answer.split(":")[0]);
+  const timeZone = "Europe/Paris"; // Paris timezone
+  const startLocalDate = new Date(year, month - 1, day, hour, 0, 0);
+  const startDateParisTZ = fromZonedTime(startLocalDate, timeZone);
+  // Valid for 6 hours
+  const endLocalDate = new Date(startLocalDate.getTime() + 6 * 60 * 60 * 1000);
+  const endDateParisTZ = fromZonedTime(endLocalDate, timeZone);
+
+  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDateParisTZ, endDateParisTZ);
+  async function createHourlyPin(accessToken, deviceId, startDateParisTZ, endDateParisTZ) {
 
     // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
-    function formatIglooDate(dateUtc) {
+    function formatIglooDate(dateTimeParisTZ) {
       const pad = n => n.toString().padStart(2, '0');
-      const year = dateUtc.getFullYear();
-      const month = pad(dateUtc.getMonth() + 1);
-      const day = pad(dateUtc.getDate());
-      const hour = pad(dateUtc.getHours());
-      // Always set minutes and seconds to 00
-      return `${year}-${month}-${day}T${hour}:00:00+00:00`;
+      const year = dateTimeParisTZ.getFullYear();
+      const month = pad(dateTimeParisTZ.getMonth() + 1);
+      const day = pad(dateTimeParisTZ.getDate());
+      const hour = pad(dateTimeParisTZ.getHours());
+      // Format: YYYY-MM-DDTHH:00:00+02:00 (Paris time, including offset)
+      const offset = -dateTimeParisTZ.getTimezoneOffset();
+      const sign = offset >= 0 ? "+" : "-";
+      const absOffset = Math.abs(offset);
+      const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
+      return `${year}-${month}-${day}T${hour}:00:00${sign}${offsetHours}:00`;
     }
 
     // log the request details
-    console.log(`Creating PIN for device ${deviceId} from ${formatIglooDate(startDateUtc)} to ${formatIglooDate(endDate)}`);
+    const startIgloo = formatIglooDate(startDateParisTZ);
+    const endIgloo = formatIglooDate(endDateParisTZ);
+    console.log(`Requesting PIN for device ${deviceId} from ${startIgloo} to ${endIgloo}`);
     const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
       method: "POST",
       headers: {
@@ -125,8 +129,8 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         variance: 1,
-        startDate: formatIglooDate(startDateUtc),
-        endDate: formatIglooDate(endDate),
+        startDate: startIgloo,
+        endDate: endIgloo,
         accessName: "Annecy Tennis",
       }),
     });
