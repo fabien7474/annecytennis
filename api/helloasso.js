@@ -195,9 +195,7 @@ export default async function handler(req, res) {
   4- Remettez la clé dans le coffret et refermez-le
   5- À la fin de votre créneau de location, remettez les raquettes dans le placard et refermez le coffret (avec le même code PIN)
 
-  Ce code unique vous permet d'ouvrir le coffret électronique pour récupérer la clé des raquettes de location.
-
-  Nous vous remercions de bien vouloir rapporter les raquettes à la fin de votre créneau de location et de refermer le cadenas (avec le même code pin). 
+  Nous vous remercions de votre confiance et restons à votre disposition pour toute question.
 
   À très bientôt sur les pistes !
 
