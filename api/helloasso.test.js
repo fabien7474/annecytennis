@@ -26,9 +26,21 @@ describe('helloasso handler', () => {
                             customFields: [
                                 { name: "Jour de la location", answer: dateStr },
                                 { name: "Début de la location", answer: timeStr }
-                            ]
+                            ],
+                            options: [
+                                {
+                                    name: "Je récupère les raquettes à l'accueil",
+                                    amount: 0,
+                                    priceCategory: "Free",
+                                    isRequired: false,
+                                    customFields: [],
+                                    optionId: 18137239
+                                }
+                            ],
+
                         }
-                    ]
+                    ],
+                    formSlug: "location-de-raquettes-de-padel",
                 }
             }
         };
@@ -53,11 +65,11 @@ describe('helloasso handler', () => {
         process.env.SMTP_PORT = "587";
         process.env.SMTP_USER = "annecypadel74@gmail.com";
         process.env.SMTP_PASS = "xcvsvpszouwvaxtw";
-        process.env.FROM_EMAIL = "noreply@example.com";
         process.env.IGLOO_DEVICE_ID = "IGK330c7db37";
         process.env.IGLOO_CLIENT_ID = "cqgor3q88x3q78x8polmlhmidr";
         process.env.IGLOO_CLIENT_SECRET = "l01pqmza6dlrx1hlth9yxheil5kbcqh5ouehevj4fxq5sf4sc6j";
         process.env.FROM_EMAIL = "annecypadel74@gmail.com";
+        process.env.ACCUEIL_EMAIL = "fabien7474@gmail.com";
 
         console.log('Handler started');
         await handler(req, res);

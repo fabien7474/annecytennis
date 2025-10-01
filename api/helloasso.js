@@ -61,6 +61,13 @@ export default async function handler(req, res) {
     console.error("Aucune adresse e‑mail trouvée dans le payload");
     return res.status(400).json({ message: "Email manquant" });
   }
+  // Vérifier si l'option "optionId": 18137239 est présente dans l'item sélectionné
+  const optionAccueil = 18137239;
+  const hasOptionAccueil = matchedItem?.options?.some(opt => opt.optionId === optionAccueil) || false;
+  console.log(`Option accueil : ${hasOptionAccueil ? "OUI" : "NON"}`);
+  const nombreRaquettes = (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
+    (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 : 3; // 3 ou 4 raquettes  
+
 
   // 5) Générer un code PIN
 
@@ -203,8 +210,29 @@ export default async function handler(req, res) {
 
   Le club Annecy Tennis`,
     });
-
     console.log(`E‑mail envoyé à ${email} (codePin: ${codePin})`);
+
+    if (optionAccueil) {
+      console.log("Option accueil demandée, envoi d’un e‑mail à l’accueil");
+      await transporter.sendMail({
+        from: process.env.FROM_EMAIL,
+        to: process.env.ACCUEIL_EMAIL,
+        subject: `Raquettes de padel réservées à retirer à l'accueil`,
+        text: `Bonjour,   
+
+  Nous avons enregistré le paiement d'une location de raquettes de padel via HelloAsso à retirer à l'accueil.
+
+  Voici les détails de la location :
+  - Nom : ${nameItem}
+  - Email : ${email}
+  - Date et heure : ${locationDateStr}
+  - Nombre de raquettes louées : ${nombreRaquettes}
+
+  Sportivement,
+
+  P.S : Ce message est généré automatiquement par l'API HelloAsso.`,
+      });
+    }
 
   } catch (err) {
     console.error("Erreur d’envoi d’e‑mail :", err);

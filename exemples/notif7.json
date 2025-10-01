@@ -1,0 +1,84 @@
+Notification à traiter : {
+  "data": {
+    "payer": {
+      "email": "fabien7474@gmail.com",
+      "country": "FRA",
+      "firstName": "fab",
+      "lastName": "beni"
+    },
+    "items": [
+      {
+        "name": "Location de deux raquettes de padel",
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2026 : -10,00€",
+          "amount": 1000
+        },
+        "customFields": [
+          {
+            "id": 6055810,
+            "name": "Téléphone (pour recevoir le code PIN)",
+            "type": "Phone",
+            "answer": "0943545897"
+          },
+          {
+            "id": 6055807,
+            "name": "Jour de la location",
+            "type": "Date",
+            "answer": "23/10/2025"
+          },
+          {
+            "id": 6055791,
+            "name": "Début de la location",
+            "type": "ChoiceList",
+            "answer": "08:45"
+          },
+          {
+            "id": 6055809,
+            "name": "Piste réservée",
+            "type": "ChoiceList",
+            "answer": "Padel 2"
+          }
+        ],
+        "options": [
+          {
+            "name": "Je récupère les raquettes à l'accueil",
+            "amount": 0,
+            "priceCategory": "Free",
+            "isRequired": false,
+            "customFields": [],
+            "optionId": 18137239
+          }
+        ],
+        "qrCode": "MTUxMjQ0NDI4OjYzODk0OTU3NDI3MzE3NzA3NA==",
+        "tierDescription": "Louez 2 raquettes de padel pour votre partie",
+        "tierId": 18135283,
+        "id": 151244428,
+        "amount": 0,
+        "type": "Product",
+        "initialAmount": 1000,
+        "state": "Processed"
+      }
+    ],
+    "amount": {
+      "total": 0,
+      "vat": 0,
+      "discount": 1000
+    },
+    "id": 151244428,
+    "date": "2025-10-01T23:17:07.3177074+02:00",
+    "formSlug": "location-de-raquettes-de-padel",
+    "formType": "Shop",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "meta": {
+      "createdAt": "2025-10-01T23:17:07.3177074+02:00",
+      "updatedAt": "2025-10-01T23:17:07.5164368+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}

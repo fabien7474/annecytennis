@@ -1,0 +1,74 @@
+Notification à traiter : {
+  "data": {
+    "payer": {
+      "email": "fabien7474@gmail.com",
+      "country": "FRA",
+      "firstName": "fab",
+      "lastName": "bezdb"
+    },
+    "items": [
+      {
+        "name": "Location d'une raquette de padel",
+        "priceCategory": "Fixed",
+        "discount": {
+          "code": "PROMO2025 : -5,00€",
+          "amount": 500
+        },
+        "customFields": [
+          {
+            "id": 6055810,
+            "name": "Téléphone (pour recevoir le code PIN)",
+            "type": "Phone",
+            "answer": "094598980"
+          },
+          {
+            "id": 6055807,
+            "name": "Jour de la location",
+            "type": "Date",
+            "answer": "10/10/2025"
+          },
+          {
+            "id": 6055791,
+            "name": "Début de la location",
+            "type": "ChoiceList",
+            "answer": "08:45"
+          },
+          {
+            "id": 6055809,
+            "name": "Piste réservée",
+            "type": "ChoiceList",
+            "answer": "Padel 2"
+          }
+        ],
+        "qrCode": "MTUxMjQ0OTU3OjYzODk0OTU3NzAyNDk1MDc1Mw==",
+        "tierDescription": "Louez 1 raquette de padel pour votre partie",
+        "tierId": 16987683,
+        "id": 151244957,
+        "amount": 0,
+        "type": "Product",
+        "initialAmount": 500,
+        "state": "Processed"
+      }
+    ],
+    "amount": {
+      "total": 0,
+      "vat": 0,
+      "discount": 500
+    },
+    "id": 151244957,
+    "date": "2025-10-01T23:21:42.4950753+02:00",
+    "formSlug": "location-de-raquettes-de-padel",
+    "formType": "Shop",
+    "organizationName": "Annecy Tennis",
+    "organizationSlug": "annecy-tennis",
+    "organizationType": "Association1901Rig",
+    "organizationIsUnderColucheLaw": false,
+    "meta": {
+      "createdAt": "2025-10-01T23:21:42.4950753+02:00",
+      "updatedAt": "2025-10-01T23:21:42.9946406+02:00"
+    },
+    "isAnonymous": false,
+    "isAmountHidden": false
+  },
+  "eventType": "Order"
+}
