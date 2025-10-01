@@ -30,15 +30,14 @@ export default async function handler(req, res) {
   logItems(payload?.data?.items);
 
   // 3) Extract item "Location d'une raquette de padel"
-  const nameItem = "Location d'une raquette de padel";
   const tierIdItem = 16987683;
   const stateItem = "Processed";
   const matchedItem = payload?.data?.items?.find((item) =>
-    item?.name?.trim() === nameItem &&
     item?.tierId === tierIdItem &&
     item?.state === stateItem
   );
   const match = Boolean(matchedItem);
+  const nameItem = matchedItem.name;
 
   // Logging pour debug
   console.log(`match = ${match}; campagneName = ${nameItem};`);
@@ -132,7 +131,7 @@ export default async function handler(req, res) {
         variance: 1,
         startDate: startIgloo,
         endDate: endIgloo,
-        accessName: "Annecy Tennis",
+        accessName: email,
       }),
     });
 

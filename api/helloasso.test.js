@@ -11,20 +11,25 @@ describe('helloasso handler', () => {
         const req = {
             method: 'POST',
             body: {
-            data: {
-                payer: { email: "fabien7474@gmail.com" },
-                items: [
-                {
-                    name: "Location d'une raquette de padel",
-                    tierId: 16987683,
-                    state: "Processed",
-                    customFields: [
-                    { name: "Jour de la location", answer: dateStr },
-                    { name: "Début de la location", answer: timeStr }
+                data: {
+                    payer: {
+                        email: "fabien7474@gmail.com",
+                        country: "FRA",
+                        firstName: "fa",
+                        lastName: "beni"
+                    },
+                    items: [
+                        {
+                            name: "Location d'une raquette de padel",
+                            tierId: 16987683,
+                            state: "Processed",
+                            customFields: [
+                                { name: "Jour de la location", answer: dateStr },
+                                { name: "Début de la location", answer: timeStr }
+                            ]
+                        }
                     ]
                 }
-                ]
-            }
             }
         };
 
