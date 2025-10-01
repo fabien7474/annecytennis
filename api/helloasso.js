@@ -28,8 +28,8 @@ export default async function handler(req, res) {
   // 2) Payload JSON déjà parsé par Vercel
   const payload = req.body;
   const payoadJson = JSON.stringify(payload, null, 2);
-  
-  const matchFormSlug = payload?.matchFormSlug == "location-de-raquettes-de-padel"
+  const payloadData = payload?.data;
+  const matchFormSlug = payloadData?.matchFormSlug == "location-de-raquettes-de-padel"
   if (!matchFormSlug) {
     console.log("Notification non traitée (formSlug non géré) :", payoadJson);
     return res.status(200).json({ ignored: true });
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
   const tierIdItemDeuxRaquettes = 18135283;
   const tierIdItemTroisOuQuatreRaquettes = 18135558;
   const stateItem = "Processed";
-  const matchedItem = payload?.data?.items?.find((item) =>
+  const matchedItem = payloadData?.items?.find((item) =>
     (item?.tierId === tierIdItemUneRaquette ||
       item?.tierId === tierIdItemDeuxRaquettes ||
       item?.tierId === tierIdItemTroisOuQuatreRaquettes) &&
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
   // 4) Récupérer l’email du payeur (sécuriser un minimum)
   const nameItem = matchedItem?.name;
-  const email = payload?.data?.payer?.email;
+  const email = payloadData?.payer?.email;
   if (!email) {
     console.error("Aucune adresse e‑mail trouvée dans le payload");
     return res.status(400).json({ message: "Email manquant" });
