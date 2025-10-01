@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   const payload = req.body;
   const payoadJson = JSON.stringify(payload, null, 2);
   const payloadData = payload?.data;
-  const matchFormSlug = payloadData?.matchFormSlug == "location-de-raquettes-de-padel"
+  const matchFormSlug = payloadData?.formSlug == "location-de-raquettes-de-padel"
   if (!matchFormSlug) {
     console.log("Notification non traitée (formSlug non géré) :", payoadJson);
     return res.status(200).json({ ignored: true });
