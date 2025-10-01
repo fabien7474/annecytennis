@@ -27,32 +27,35 @@ export default async function handler(req, res) {
 
   // 2) Payload JSON déjà parsé par Vercel
   const payload = req.body;
-  logItems(payload?.data?.items);
-
-  // 3) Extract item "Location d'une raquette de padel"
-  // const tierIdItem = 16987683;
-  const stateItem = "Processed";
-  const matchedItem = payload?.data?.items?.find((item) =>
-    // item?.tierId === tierIdItem &&
-    item?.state === stateItem
-  );
-  const match = Boolean(matchedItem);
-  const nameItem = matchedItem?.name;
-
-  // Logging pour debug
-  console.log(`match = ${match}; campagneName = ${nameItem};`);
   const payoadJson = JSON.stringify(payload, null, 2);
-  if (!match) {
-    console.log("Notification non traitée :", payoadJson);
-  } else {
-    console.log("Notification à traiter :", payoadJson);
-  }
-
-  if (!match) {
+  
+  const matchFormSlug = payload?.matchFormSlug == "location-de-raquettes-de-padel"
+  if (!matchFormSlug) {
+    console.log("Notification non traitée (formSlug non géré) :", payoadJson);
     return res.status(200).json({ ignored: true });
   }
 
+  // 3) Extract un des items "Location d'une ou plusieurs raquettes de padel"
+  const tierIdItemUneRaquette = 16987683;
+  const tierIdItemDeuxRaquettes = 18135283;
+  const tierIdItemTroisOuQuatreRaquettes = 18135558;
+  const stateItem = "Processed";
+  const matchedItem = payload?.data?.items?.find((item) =>
+    (item?.tierId === tierIdItemUneRaquette ||
+      item?.tierId === tierIdItemDeuxRaquettes ||
+      item?.tierId === tierIdItemTroisOuQuatreRaquettes) &&
+    item?.state === stateItem
+  );
+  const matchItem = Boolean(matchedItem);
+  if (!matchItem) {
+    console.log("Notification non traitée (item non géré) :", payoadJson);
+    return res.status(200).json({ ignored: true });
+  }
+
+  console.log("Notification à traiter :", payoadJson);
+
   // 4) Récupérer l’email du payeur (sécuriser un minimum)
+  const nameItem = matchedItem?.name;
   const email = payload?.data?.payer?.email;
   if (!email) {
     console.error("Aucune adresse e‑mail trouvée dans le payload");
