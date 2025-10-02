@@ -223,7 +223,6 @@ export default async function handler(req, res) {
   Nous avons enregistré le paiement d'une location de raquettes de padel via HelloAsso à retirer à l'accueil.
 
   Voici les détails de la location :
-  - Nom : ${nameItem}
   - Email : ${email}
   - Date et heure : ${locationDateStr}
   - Nombre de raquettes louées : ${nombreRaquettes}
