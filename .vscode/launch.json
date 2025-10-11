@@ -11,8 +11,7 @@
             "name": "Debug Jest Tests",
             "program": "${workspaceFolder}/node_modules/jest/bin/jest.js",
             "args": [
-                "--runInBand",
-                // "api/dateutils.test.js"
+                "--runInBand"
             ],
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen",
