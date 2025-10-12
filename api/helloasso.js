@@ -32,6 +32,13 @@ export default async function handler(req, res) {
 
   try {
 
+    console.log("Incoming request:", {
+      method: req.method,
+      url: req.url,
+      headers: req.headers,
+      body: req.body
+    });
+
     // 0 Sortir si pas enabled
     if (!CONFIG.enabled) {
       await sendLogToLogflare({
