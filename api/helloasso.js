@@ -154,13 +154,14 @@ export default async function handler(req, res) {
     const [day, month, year] = jourLocation.answer.split("/").map(Number);
     const [hour, minute] = heureLocation.answer.split(":").map(Number);
     const timeZone = "Europe/Paris";
+    //  Converts the Date as if it's Paris time and convert to UTC
     const debutLocation = fromZonedTime(new Date(year, month - 1, day, hour, minute, 0), timeZone);
-    const nowParisTZ = fromZonedTime(new Date(), timeZone);
+    const nowParisTZ = new Date(); //current time already in UTC
     const diffMinutes = (nowParisTZ.getTime() - debutLocation.getTime()) / (1000 * 60);
     console.log(`nowParisTZ : ${nowParisTZ.toString()}  - debutLocation : ${debutLocation.toString()} = diffMinutes: ${diffMinutes}`);
     if (diffMinutes >= 75) {
       SendErrorEmailToPayerAndSupport();
-      throw new Error("Debut de location est dans le passé");
+      throw new Error("Debut de location est trop dans le passé");
     }
     const debutPinCode = new Date(debutLocation);
     if (diffMinutes >= 0) {
