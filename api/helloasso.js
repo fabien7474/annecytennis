@@ -157,6 +157,7 @@ export default async function handler(req, res) {
     const debutLocation = fromZonedTime(new Date(year, month - 1, day, hour, minute, 0), timeZone);
     const nowParisTZ = fromZonedTime(new Date(), timeZone);
     const diffMinutes = (nowParisTZ.getTime() - debutLocation.getTime()) / (1000 * 60);
+    console.log(`nowParisTZ : ${nowParisTZ.toString()}  - debutLocation : ${debutLocation.toString()} = diffMinutes: ${diffMinutes}`);
     if (diffMinutes >= 75) {
       SendErrorEmailToPayerAndSupport();
       throw new Error("Debut de location est dans le passé");
