@@ -106,12 +106,13 @@ export default async function handler(req, res) {
     }
 
     // 5) Générer un code PIN
-    let customFields, jourLocation, heureLocation, debutPinCode, finPinCode, codePin;
+    let customFields, jourLocation, heureLocation, debutPinCode, finPinCode, codePin, locationDateStr;
     try {
       const accessToken = await getIgloohomeAccessToken();
       customFields = matchedItem?.customFields || [];
       jourLocation = customFields.find(f => f.name === "Jour de la location");
       heureLocation = customFields.find(f => f.name === "Début de la location");
+      locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
       debutPinCode = await CalculerDebutPinCode(jourLocation, heureLocation);
       finPinCode = calculerFinPinCode(debutPinCode);
       codePin = await createHourlyPin(accessToken, CONFIG.iglooDeviceId, debutPinCode, finPinCode);
@@ -128,7 +129,6 @@ export default async function handler(req, res) {
     console.log(`Code PIN généré pour ${email} : ${codePin}`);
 
     // 6) Envoyer le code PIN au payeur
-    const locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
     const nombreRaquettes = (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
       (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 : 3; // 3 ou 4 raquettes  
     await transporter.sendMail({
@@ -208,7 +208,7 @@ export default async function handler(req, res) {
         subject: "Erreur sur la réservation de raquettes de padel",
         text: `Bonjour,
 
-        Votre demande de location de raquettes de padel n'a pas pu être traitée car la date de début de location est trop ancienne ou incorrecte.
+        Votre demande de location de raquettes de padel n'a pas pu être traitée car la date et l'heure de début de location (${locationDateStr}) sont trop anciennes ou incorrectes.
 
         Vous pouvez essayer de soumettre une nouvelle demande avec des informations de location avec des date/heure valides. 
         
