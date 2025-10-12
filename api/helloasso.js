@@ -19,7 +19,6 @@ export default async function handler(req, res) {
     return res.status(503).json({ message: "API désactivée" });
   }
 
-
   // 1) Refuser tout sauf POST
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Méthode non autorisée" });
@@ -54,20 +53,49 @@ export default async function handler(req, res) {
 
   console.log("Notification à traiter :", payoadJson);
 
+  /**
+   * Helper to send error report email to admin
+   */
+  const SMTP_CONFIG = {
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    fromEmail: process.env.FROM_EMAIL,
+    accueilEmail: process.env.ACCUEIL_EMAIL || process.env.FROM_EMAIL,
+    supportEmail: process.env.SUPPORT_EMAIL || process.env.FROM_EMAIL
+  };
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_CONFIG.host,
+    port: Number(SMTP_CONFIG.port || 587),
+    secure: Number(SMTP_CONFIG.port) === 465, // true si port 465
+    auth: {
+      user: SMTP_CONFIG.user,
+      pass: SMTP_CONFIG.pass,
+    },
+  });
+
   // 4) Récupérer l’email du payeur (sécuriser un minimum)
   const nameItem = matchedItem?.name;
   const email = payloadData?.payer?.email;
   if (!email) {
     console.error("Aucune adresse e‑mail trouvée dans le payload");
+    await transporter.sendMail({
+      from: SMTP_CONFIG.fromEmail,
+      to: SMTP_CONFIG.supportEmail,
+      subject: "[Erreur API HelloAsso] Email manquant dans le payload",
+      text: `Aucune adresse e-mail n'a été trouvée dans le payload reçu:\n\n${payoadJson}`
+    });
     return res.status(400).json({ message: "Email manquant" });
   }
+
   // Vérifier si l'option "optionId": 18137239 est présente dans l'item sélectionné
   const optionAccueil = 18137239;
   const hasOptionAccueil = matchedItem?.options?.some(opt => opt.optionId === optionAccueil) || false;
   console.log(`Option accueil : ${hasOptionAccueil ? "OUI" : "NON"}`);
   const nombreRaquettes = (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
     (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 : 3; // 3 ou 4 raquettes  
-
 
   // 5) Générer un code PIN
 
@@ -93,34 +121,76 @@ export default async function handler(req, res) {
   console.log("Igloohome access token obtenu");
 
   // Création du code PIN horaire via l’API Igloohome
-  const customFields = matchedItem?.customFields || [];
-  const dayField = customFields.find(f => f.name === "Jour de la location");
-  const timeField = customFields.find(f => f.name === "Début de la location");
-  if (!dayField || !timeField) {
-    throw new Error("Missing custom fields Jour/Heure in payload");
-  }
-  const [day, month, year] = dayField.answer.split("/").map(Number);
-  const [hour, minute] = timeField.answer.split(":").map(Number);
-  const hour2 = (minute === 0) ? hour - 1 : hour;
-  const timeZone = "Europe/Paris"; // Paris timezone
-  const startLocalDate = new Date(year, month - 1, day, hour2, 0, 0);
-  const startDateParisTZ = fromZonedTime(startLocalDate, timeZone);
-  // Valid for 5 hours
-  const endLocalDate = new Date(startLocalDate.getTime() + 5 * 60 * 60 * 1000);
-  const endDateParisTZ = fromZonedTime(endLocalDate, timeZone);
+  async function SendErrorEmailToPayerAndSupport() {
+    const emailErreurReservation = {
+      from: SMTP_CONFIG.fromEmail,
+      subject: "Erreur sur la réservation de raquettes de padel",
+      text: `Bonjour,
 
-  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, startDateParisTZ, endDateParisTZ);
+        Votre demande de location de raquettes de padel n'a pas pu être traitée car la date de début de location est trop ancienne ou incorrecte.
+
+        Vous pouvez essayer de soumettre une nouvelle demande avec des informations de location avec des date/heure valides. 
+
+        Nous vous rembourserons cette location erronée.
+
+        Sportivement,
+        Le club Annecy Tennis`
+    };
+    emailErreurReservation.to = email;
+    await transporter.sendMail(emailErreurReservation);
+    emailErreurReservation.to = SMTP_CONFIG.supportEmail;
+    emailErreurReservation.text += `
+
+        Détails techniques pour le support :
+        ${payoadJson}`;
+
+    await transporter.sendMail(emailErreurReservation);
+  }
+  async function CalculerDebutPinCode(jourLocation, heureLocation) {
+    if (!jourLocation || !heureLocation) {
+      SendErrorEmailToPayerAndSupport();
+      throw new Error("Missing custom fields Jour/Heure in payload");
+    }
+    const [day, month, year] = jourLocation.answer.split("/").map(Number);
+    const [hour, minute] = heureLocation.answer.split(":").map(Number);
+    const timeZone = "Europe/Paris";
+    const debutLocation = fromZonedTime(new Date(year, month - 1, day, hour, minute, 0), timeZone);
+    const nowParisTZ = fromZonedTime(new Date(), timeZone);
+    const diffMinutes = (nowParisTZ.getTime() - debutLocation.getTime()) / (1000 * 60);
+    if (diffMinutes >= 75) {
+      SendErrorEmailToPayerAndSupport();
+      throw new Error("Debut de location est dans le passé");
+    }
+    const debutPinCode = new Date(debutLocation);
+    if (diffMinutes >= 0) {
+      // début de location dans le passé mais encore en cours
+      console.warn("Début de location est dans le passé mais encore en cours");
+      debutPinCode.setHours(nowParisTZ.getHours());
+    } else { // La location est dans le futur
+      if (debutLocation.getMinutes() == 0) {
+        debutPinCode.setHours(debutLocation.getHours() - 1);
+      }
+    }
+    debutPinCode.setMinutes(0);
+    return debutPinCode;
+  }
+  function calculerFinPinCode(debutPinCode) {
+    // Valid for 5 hours
+    const finPinCode = new Date(debutPinCode);
+    finPinCode.setHours(debutPinCode.getHours() + 5);
+    return finPinCode;
+  }
   async function createHourlyPin(accessToken, deviceId, startDateParisTZ, endDateParisTZ) {
 
     // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
-    function formatIglooDate(dateTimeParisTZ) {
+    function formatIglooDate(date) {
       const pad = n => n.toString().padStart(2, '0');
-      const year = dateTimeParisTZ.getFullYear();
-      const month = pad(dateTimeParisTZ.getMonth() + 1);
-      const day = pad(dateTimeParisTZ.getDate());
-      const hour = pad(dateTimeParisTZ.getHours());
+      const year = date.getFullYear();
+      const month = pad(date.getMonth() + 1);
+      const day = pad(date.getDate());
+      const hour = pad(date.getHours());
       // Format: YYYY-MM-DDTHH:00:00+02:00 (Paris time, including offset)
-      const offset = -dateTimeParisTZ.getTimezoneOffset();
+      const offset = -date.getTimezoneOffset();
       const sign = offset >= 0 ? "+" : "-";
       const absOffset = Math.abs(offset);
       const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
@@ -147,6 +217,12 @@ export default async function handler(req, res) {
 
     const data = await resp.json();
     if (!resp.ok) {
+      await transporter.sendMail({
+        from: SMTP_CONFIG.fromEmail,
+        to: SMTP_CONFIG.supportEmail,
+        subject: "[Erreur API HelloAsso] Erreur lors de la création du code PIN",
+        text: `Erreur lors de la création du code PIN via l'API Igloohome:\n\nStatus: ${resp.status}\nRéponse: ${JSON.stringify(data, null, 2)}\n\nPayload:\n${payoadJson}`
+      });
       throw new Error(`PIN creation failed: ${resp.status} ${JSON.stringify(data)}`);
     }
 
@@ -159,32 +235,22 @@ export default async function handler(req, res) {
     }
     return data.pin;
   }
+
+  const customFields = matchedItem?.customFields || [];
+  const jourLocation = customFields.find(f => f.name === "Jour de la location");
+  const heureLocation = customFields.find(f => f.name === "Début de la location");
+  const debutPinCode = await CalculerDebutPinCode(jourLocation, heureLocation);
+  const finPinCode = calculerFinPinCode(debutPinCode);
+  const codePin = await createHourlyPin(accessToken, process.env.IGLOO_DEVICE_ID, debutPinCode, finPinCode);
   console.log(`Code PIN généré : ${codePin}`);
 
   // 6) Configurer le transport SMTP (Nodemailer) et envoyer l'email
-  const SMTP_CONFIG = {
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-    fromEmail: process.env.FROM_EMAIL,
-  };
-  const transporter = nodemailer.createTransport({
-    host: SMTP_CONFIG.host,
-    port: Number(SMTP_CONFIG.port || 587),
-    secure: Number(SMTP_CONFIG.port) === 465, // true si port 465
-    auth: {
-      user: SMTP_CONFIG.user,
-      pass: SMTP_CONFIG.pass,
-    },
-  });
-
   try {
     // Format date and time for email (ex: "20/09/2022 à 07:30")
-    const locationDateStr = `${dayField.answer} à ${timeField.answer}`;
+    const locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
 
     await transporter.sendMail({
-      from: process.env.FROM_EMAIL,
+      from: SMTP_CONFIG.fromEmail,
       to: email,
       subject: "Votre code PIN pour la location de raquettes de padel",
       text: `Bonjour,
@@ -215,8 +281,8 @@ export default async function handler(req, res) {
     if (optionAccueil) {
       console.log("Option accueil demandée, envoi d’un e‑mail à l’accueil");
       await transporter.sendMail({
-        from: process.env.FROM_EMAIL,
-        to: process.env.ACCUEIL_EMAIL,
+        from: SMTP_CONFIG.fromEmail,
+        to: SMTP_CONFIG.accueilEmail,
         subject: `Raquettes de padel réservées à retirer à l'accueil`,
         text: `Bonjour,   
 
