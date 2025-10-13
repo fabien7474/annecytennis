@@ -34,11 +34,6 @@ export default async function handler(req, res) {
 
     // 0 Sortir si pas enabled
     if (!CONFIG.enabled) {
-      await sendLogToLogflare({
-        level: "info",
-        message: "API désactivée",
-        metadata: { enabled: CONFIG.enabled }
-      });
       return res.status(200).json({ message: "API désactivée" });
     }
 
