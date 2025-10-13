@@ -176,6 +176,11 @@ export default async function handler(req, res) {
     }
 
     // 7) Répondre à HelloAsso
+    await sendLogToLogflare({
+      level: "info",
+      message: "Code PIN généré et e‑mail envoyé",
+      metadata: { email, locationDateStr, nombreRaquettes, codePin }
+    });
     return res.status(200).json({ sent: true });
 
     async function getIgloohomeAccessToken() {
