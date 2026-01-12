@@ -98,7 +98,12 @@ export default async function handler(req, res) {
     try {
       const accessToken = await getIgloohomeAccessToken();
       customFields = matchedItem?.customFields || [];
-      jourLocation = customFields.find(f => f.name === "Jour de la location");
+      locationAujourdhui = customFields.find(f => f.name === "Location pour aujourd'hui ?");
+      jourLocation = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
+      //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
+      if (locationAujourdhui?.answer === "Oui") {
+        jourLocation.answer = new Date().toLocaleDateString("fr-FR");
+      }
       heureLocation = customFields.find(f => f.name === "Début de la location");
       locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
       debutPinCode = await CalculerDebutPinCode(jourLocation, heureLocation);
