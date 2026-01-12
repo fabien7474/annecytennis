@@ -98,16 +98,14 @@ export default async function handler(req, res) {
     try {
       const accessToken = await getIgloohomeAccessToken();
       customFields = matchedItem?.customFields || [];
-      const locationAujourdhui = customFields.find(f => f.name === "Location pour aujourd'hui ?");
+      const locationAujourdhui = customFields.find(f => f.id === 6960318);
+      console.log(`Champ personnalisé "Location aujourd'hui" : ${JSON.stringify(locationAujourdhui)}`);
       let jourLocation = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
+      console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocation)}`);
       //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
       if (locationAujourdhui?.answer === "Oui") {
         today = new Date().toLocaleDateString("fr-FR");
-        if (jourLocation) {
-          jourLocation.answer = today;
-        } else {
-          jourLocation = { name: "Jour de la location (si pas aujourd'hui)", answer: today };
-        }
+        jourLocation = { answer: today };
       }
       heureLocation = customFields.find(f => f.name === "Début de la location");
       locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
