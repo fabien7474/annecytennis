@@ -104,8 +104,8 @@ export default async function handler(req, res) {
       console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocation)}`);
       //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
       if (locationAujourdhui?.answer === "Oui") {
-        today = new Date().toLocaleDateString("fr-FR");
-        jourLocation = { answer: today };
+        jourLocation = { answer: new Date().toLocaleDateString("fr-FR") };
+        console.log(`Location aujourd'hui, jourLocation mis à jour : ${JSON.stringify(jourLocation)}`);
       }
       heureLocation = customFields.find(f => f.name === "Début de la location");
       locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
