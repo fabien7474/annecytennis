@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     // 6) Envoyer le code PIN au payeur
     const nombreRaquettes =
       (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
-      (matchedItem?.tierId === tierIdItemDeuxRaquette) ? 2 :
+      (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 :
       (matchedItem?.tierId === tierIdItemTroisRaquettes) ? 3 :
       (matchedItem?.tierId === tierIdItemQuatreRaquettes) ? 4 : 3; // 3 ou 4 raquettes
     await transporter.sendMail({
