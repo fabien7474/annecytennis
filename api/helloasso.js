@@ -55,12 +55,14 @@ export default async function handler(req, res) {
     // 3) Extract un des items "Location d'une ou plusieurs raquettes de padel"
     const tierIdItemUneRaquette = 16987683;
     const tierIdItemDeuxRaquettes = 18135283;
-    const tierIdItemTroisOuQuatreRaquettes = 18135558;
+    const tierIdItemTroisRaquettes = 21886993;
+    const tierIdItemQuatreRaquettes = 21886986;
     const stateItem = "Processed";
     const matchedItem = payloadData?.items?.find((item) =>
       (item?.tierId === tierIdItemUneRaquette ||
         item?.tierId === tierIdItemDeuxRaquettes ||
-        item?.tierId === tierIdItemTroisOuQuatreRaquettes) &&
+        item?.tierId === tierIdItemTroisRaquettes ||
+        item?.tierId === tierIdItemQuatreRaquettes) &&
       item?.state === stateItem
     );
     if (!matchedItem) {
@@ -125,8 +127,11 @@ export default async function handler(req, res) {
     console.log(`Code PIN généré pour ${email} : ${codePin}`);
 
     // 6) Envoyer le code PIN au payeur
-    const nombreRaquettes = (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
-      (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 : 3; // 3 ou 4 raquettes  
+    const nombreRaquettes =
+      (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
+      (matchedItem?.tierId === tierIdItemDeuxRaquette) ? 2 :
+      (matchedItem?.tierId === tierIdItemTroisRaquettes) ? 3 :
+      (matchedItem?.tierId === tierIdItemQuatreRaquettes) ? 4 : 3; // 3 ou 4 raquettes
     await transporter.sendMail({
       from: CONFIG.fromEmail,
       to: email,
