@@ -95,25 +95,108 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Email manquant" });
     }
 
-    // 5) Générer un code PIN
-    let customFields, jourLocation, heureLocation, debutPinCode, finPinCode, codePin, locationDateStr;
-    try {
-      const accessToken = await getIgloohomeAccessToken();
-      customFields = matchedItem?.customFields || [];
-      const locationAujourdhui = customFields.find(f => f.id === 6960318);
-      console.log(`Champ personnalisé "Location aujourd'hui" : ${JSON.stringify(locationAujourdhui)}`);
-      let jourLocation = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
-      console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocation)}`);
-      //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
-      if (locationAujourdhui?.answer === "Oui") {
-        jourLocation = { answer: new Date().toLocaleDateString("fr-FR") };
-        console.log(`Location aujourd'hui, jourLocation mis à jour : ${JSON.stringify(jourLocation)}`);
+    // 5) Extraire locationAujourdhui, jourLocationField et heureLocationField depuis matchedItem.customFields
+    let customFields, locationJour, locationMois, locationAnnee, codePin, accessToken;
+    customFields = matchedItem?.customFields || [];
+    const locationAujourdhui = customFields.find(f => f.id === 6960318);
+    console.log(`Champ personnalisé "Location aujourd'hui" : ${JSON.stringify(locationAujourdhui)}`);
+    const jourLocationField = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
+    console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocationField)}`);
+    const heureLocationField = customFields.find(f => f.name === "Début de la location");
+    console.log(`Champ personnalisé "Début de la location" : ${JSON.stringify(heureLocationField)}`);
+
+    // Calculer locationAujourduiParis
+    const locationAujourdhuiBool = locationAujourdhui?.answer === "Oui";
+    // Extraire et calculer heureLocation au format HH:mm
+    if (((!jourLocationField) && !locationAujourdhuiBool) || !heureLocationField) {
+      await EnvoyerEmailAuPayeurCarDateDebutIncorrecte();
+      throw new Error(`Missing custom fields Jour/Heure in payload (jourLocation : ${jourLocationField}, heureLocation : ${heureLocationField})`);
+    }
+    // Calculer locationDate
+    //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
+    const timeZoneParis = "Europe/Paris";
+    // On utilise meta.updatedAt du payload (date de traitement HelloAsso) plutôt que l'heure du serveur, avec new Date() en secours si absent
+    const nowDate = payloadData?.meta?.updatedAt ? new Date(payloadData.meta.updatedAt) : new Date();
+    if (locationAujourdhuiBool) {
+      const nowJourParis = Number(nowDate.toLocaleString("fr-FR", { timeZone: timeZoneParis, day: "2-digit" }));
+      const nowMoisParis = Number(nowDate.toLocaleString("fr-FR", { timeZone: timeZoneParis, month: "2-digit" }));
+      const nowAnneeParis = Number(nowDate.toLocaleString("fr-FR", { timeZone: timeZoneParis, year: "numeric" }));
+      locationJour = nowJourParis;
+      locationMois = nowMoisParis;
+      locationAnnee = nowAnneeParis;
+    } else {
+      [locationJour, locationMois, locationAnnee] = jourLocationField.answer.split("/").map(Number)
+      // Valider que locationJour, locationMois, locationAnnee sont des nombres valides
+      if (Number.isNaN(locationJour) || Number.isNaN(locationMois) || Number.isNaN(locationAnnee)) {
+        console.error("Date location format invalide :", jourLocationField.answer);
+        await transporter.sendMail({
+          from: CONFIG.fromEmail,
+          to: CONFIG.supportEmail,
+          subject: "[Erreur Form HelloAsso] Date location format invalide",
+          text: `Date location format invalide:\n\n${jourLocationField.answer}`
+        });
+        return res.status(200).json({ message: "Date location format invalide" });
       }
-      heureLocation = customFields.find(f => f.name === "Début de la location");
-      locationDateStr = `${jourLocation.answer} à ${heureLocation.answer}`;
-      debutPinCode = await CalculerDebutPinCode(jourLocation, heureLocation);
-      finPinCode = calculerFinPinCode(debutPinCode);
-      codePin = await createHourlyPin(accessToken, CONFIG.iglooDeviceId, debutPinCode, finPinCode);
+    }
+    const [locationHeure, locationMinute] = heureLocationField.answer.split(":").map(Number);
+    if (Number.isNaN(locationHeure) || Number.isNaN(locationMinute)) {
+      console.error("Heure location format invalide :", heureLocationField.answer);
+      await transporter.sendMail({
+        from: CONFIG.fromEmail,
+        to: CONFIG.supportEmail,
+        subject: "[Erreur Form HelloAsso] Heure location format invalide",
+        text: `Heure location format invalide:\n\n${heureLocationField.answer}`
+      });
+      return res.status(200).json({ message: "Heure location format invalide" });
+    }
+
+    const locationDateStr = `${locationJour}/${locationMois}/${locationAnnee} à ${heureLocationField.answer}`;
+
+    // 6) Générer un code PIN
+    // Calculer diffMinutes entre nowParis et location à partir des variables nowJourParis, nowMoisParis, nowAnneeParis, nowHeureParis, nowMinuteParis et locationJour, locationMois, locationAnnee, locationHeure, locationMinute
+    // On passe une chaîne ISO sans offset (et non un objet Date) pour que fromZonedTime interprète les composants
+    // directement comme heure de Paris, sans dépendre du fuseau horaire local du serveur (ex. Japon)
+    const pad2 = n => n.toString().padStart(2, '0');
+    const debutLocation = fromZonedTime(`${locationAnnee}-${pad2(locationMois)}-${pad2(locationJour)}T${pad2(locationHeure)}:${pad2(locationMinute)}:00`, timeZoneParis);
+    const diffMinutes = (nowDate.getTime() - debutLocation.getTime()) / (1000 * 60);
+    console.log(`nowParisDate : ${nowDate.toString()}  - debutLocation : ${debutLocation.toString()} = diffMinutes: ${diffMinutes}`);
+    if (diffMinutes >= 75) { // Début de location dans le passé plus de 1h15 avant l'heure actuelle
+      await EnvoyerEmailAuPayeurCarDateDebutIncorrecte();
+      return res.status(200).json({ message: `Debut de location est trop dans le passé de ${diffMinutes} minutes (nowParisTZ: ${nowDate.toString()}  - debutLocation : ${debutLocation.toString()})` });
+    }
+
+    // Calculer debutPinCode
+    let debutPinCode;
+    if (diffMinutes >= 0) { // début de location dans le passé mais moins de 1h15 avant l'heure actuelle, donc la partie est encore en cours
+      debutPinCode = nowDate; // on prend l'heure actuelle comme début de location
+    } else { // la location est dans le futur : on enlève une heure si c'est une heure pleine pour pouvoir retirer les raquettes avant le début de la location
+      if (debutLocation.getMinutes() == 0) {
+        // debutPinCode = debutLocation - 1 heure
+        debutPinCode = new Date(debutLocation.getTime() - 60 * 60 * 1000);
+      } else {
+        debutPinCode = new Date(debutLocation.getTime());
+      }
+    }
+    // Set minutes and seconds to 0 for debutPinCode
+    debutPinCode.setMinutes(0, 0, 0);
+
+    // Récupérer l’access token Igloohome
+    try {
+      accessToken = await getIgloohomeAccessToken();
+    } catch (err) {
+      console.error("Erreur lors de l'acquisition de l'access token Igloohome :", err);
+      await transporter.sendMail({
+        from: CONFIG.fromEmail,
+        to: CONFIG.supportEmail,
+        subject: "[Erreur API HelloAsso] lors de l'acquisition de l'access token Igloohome",
+        text: `Une erreur est survenue lors de lors de l'acquisition de l'access token Igloohome : ${err.message}`
+      });
+      return res.status(200).json({ status: "error", message: "Erreur lors de l'acquisition de l'access token Igloohome" });
+    }
+
+    // Créer le code PIN via l’API Igloohome
+    try {
+      codePin = await createHourlyPin(accessToken, CONFIG.iglooDeviceId, debutPinCode);
     } catch (err) {
       console.error("Erreur lors de la génération du code PIN :", err);
       await transporter.sendMail({
@@ -129,9 +212,9 @@ export default async function handler(req, res) {
     // 6) Envoyer le code PIN au payeur
     const nombreRaquettes =
       (matchedItem?.tierId === tierIdItemUneRaquette) ? 1 :
-      (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 :
-      (matchedItem?.tierId === tierIdItemTroisRaquettes) ? 3 :
-      (matchedItem?.tierId === tierIdItemQuatreRaquettes) ? 4 : 3; // 3 ou 4 raquettes
+        (matchedItem?.tierId === tierIdItemDeuxRaquettes) ? 2 :
+          (matchedItem?.tierId === tierIdItemTroisRaquettes) ? 3 :
+            (matchedItem?.tierId === tierIdItemQuatreRaquettes) ? 4 : 3; // 3 ou 4 raquettes
     await transporter.sendMail({
       from: CONFIG.fromEmail,
       to: email,
@@ -183,14 +266,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // 7) Répondre à HelloAsso
-    await sendLogToLogflare({
-      level: "info",
-      message: "Code PIN généré et e‑mail envoyé",
-      metadata: { email, locationDateStr, nombreRaquettes, codePin }
-    });
-    return res.status(200).json({ sent: true });
-
     async function getIgloohomeAccessToken() {
       const resp = await fetch("https://auth.igloohome.co/oauth2/token", {
         method: "POST",
@@ -227,64 +302,39 @@ export default async function handler(req, res) {
       await transporter.sendMail(emailErreurReservation);
     }
 
-    async function CalculerDebutPinCode(jourLocation, heureLocation) {
-      if (!jourLocation || !heureLocation) {
-        EnvoyerEmailAuPayeurCarDateDebutIncorrecte();
-        throw new Error(`Missing custom fields Jour/Heure in payload (jourLocation : ${jourLocation}, heureLocation : ${heureLocation})`);
-      }
-      const [day, month, year] = jourLocation.answer.split("/").map(Number);
-      const [hour, minute] = heureLocation.answer.split(":").map(Number);
-      const timeZone = "Europe/Paris";
-      //  Converts the Date as if it's Paris time and convert to UTC
-      const debutLocation = fromZonedTime(new Date(year, month - 1, day, hour, minute, 0), timeZone);
-      const nowParisTZ = new Date(); //current time already in UTC
-      const diffMinutes = (nowParisTZ.getTime() - debutLocation.getTime()) / (1000 * 60);
-      console.log(`nowParisTZ : ${nowParisTZ.toString()}  - debutLocation : ${debutLocation.toString()} = diffMinutes: ${diffMinutes}`);
-      if (diffMinutes >= 75) {
-        EnvoyerEmailAuPayeurCarDateDebutIncorrecte();
-        throw new Error(`Debut de location est trop dans le passé de ${diffMinutes} minutes (nowParisTZ: ${nowParisTZ.toString()}  - debutLocation : ${debutLocation.toString()})`);
-      }
-      const debutPinCode = new Date(debutLocation);
-      if (diffMinutes >= 0) {
-        // début de location dans le passé mais encore en cours
-        console.warn("Début de location est dans le passé mais encore en cours");
-        debutPinCode.setHours(nowParisTZ.getHours());
-      } else { // La location est dans le futur
-        if (debutLocation.getMinutes() == 0) {
-          debutPinCode.setHours(debutLocation.getHours() - 1);
-        }
-      }
-      debutPinCode.setMinutes(0);
-      return debutPinCode;
-    }
-
-    function calculerFinPinCode(debutPinCode) {
-      // Valid for 5 hours
-      const finPinCode = new Date(debutPinCode);
-      finPinCode.setHours(debutPinCode.getHours() + 5);
-      return finPinCode;
-    }
-
-    async function createHourlyPin(accessToken, deviceId, startDateParisTZ, endDateParisTZ) {
+    async function createHourlyPin(accessToken, deviceId, startPinDate) {
 
       // Helper to format date as YYYY-MM-DDTHH:00:00+hh:mm
       function formatIglooDate(date) {
         const pad = n => n.toString().padStart(2, '0');
-        const year = date.getFullYear();
-        const month = pad(date.getMonth() + 1);
-        const day = pad(date.getDate());
-        const hour = pad(date.getHours());
-        // Format: YYYY-MM-DDTHH:00:00+02:00 (Paris time, including offset)
-        const offset = -date.getTimezoneOffset();
-        const sign = offset >= 0 ? "+" : "-";
-        const absOffset = Math.abs(offset);
-        const offsetHours = String(Math.floor(absOffset / 60)).padStart(2, "0");
-        return `${year}-${month}-${day}T${hour}:00:00${sign}${offsetHours}:00`;
+        const year = Number(date.toLocaleString("fr-FR", { timeZone: "Europe/Paris", year: "numeric" }));
+        const month = pad(Number(date.toLocaleString("fr-FR", { timeZone: "Europe/Paris", month: "2-digit" })));
+        const day = pad(Number(date.toLocaleString("fr-FR", { timeZone: "Europe/Paris", day: "2-digit" })));
+        // formatToParts + hourCycle "h23" évite le suffixe littéral "h" que fr-FR ajoute au format heure seule (ex. "23 h"), qui rend Number() NaN
+        const hourPart = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", hourCycle: "h23" })
+          .formatToParts(date)
+          .find(p => p.type === "hour")?.value;
+        let hourRaw = Number(hourPart);
+        if (hourRaw === 24) hourRaw = 0; // Corrige le bug ICU qui retourne "24" au lieu de "00" à minuit
+        const hour = pad(hourRaw);
+        // Calculer le offset de la timezone Paris au format +02:00 ou +01:00 selon l'heure d'été/hiver
+        const offsetPart = new Intl.DateTimeFormat("en-US", {
+          timeZone: "Europe/Paris",
+          timeZoneName: "shortOffset",
+        })
+          .formatToParts(date)
+          .find((p) => p.type === "timeZoneName")?.value; // ex: "GMT+2"
+        const match = offsetPart?.match(/GMT([+-])(\d+)(?::(\d+))?/);
+        const sign = match?.[1] || "+";
+        const offsetHours = pad(Number(match?.[2] || 1));
+        const offsetMinutes = pad(Number(match?.[3] || 0));
+        return `${year}-${month}-${day}T${hour}:00:00${sign}${offsetHours}:${offsetMinutes}`;
       }
 
       // log the request details
-      const startIgloo = formatIglooDate(startDateParisTZ);
-      const endIgloo = formatIglooDate(endDateParisTZ);
+      const startIgloo = formatIglooDate(startPinDate);
+      const endPinDate = new Date(startPinDate.getTime() + 5 * 60 * 60 * 1000); // +5h en millisecondes, indépendant du fuseau serveur
+      const endIgloo = formatIglooDate(endPinDate);
       console.log(`Requesting PIN for device ${deviceId} from ${startIgloo} to ${endIgloo}`);
       const resp = await fetch(`https://api.igloodeveloper.co/igloohome/devices/${deviceId}/algopin/hourly`, {
         method: "POST",
@@ -300,25 +350,25 @@ export default async function handler(req, res) {
         }),
       });
 
-      const data = await resp.json();
+      const iglooResponseJson = await resp.json();
       if (!resp.ok) {
         await transporter.sendMail({
           from: CONFIG.fromEmail,
           to: CONFIG.supportEmail,
           subject: "[Erreur API HelloAsso] Erreur lors de la création du code PIN",
-          text: `Erreur lors de la création du code PIN via l'API Igloohome:\n\nStatus: ${resp.status}\nRéponse: ${JSON.stringify(data, null, 2)}\n\nPayload:\n${payoadJson}`
+          text: `Erreur lors de la création du code PIN via l'API Igloohome:\n\nStatus: ${resp.status}\nRéponse: ${JSON.stringify(iglooResponseJson, null, 2)}\n\nPayload:\n${payoadJson}`
         });
-        throw new Error(`PIN creation failed: ${resp.status} ${JSON.stringify(data)}`);
+        throw new Error(`PIN creation failed: ${resp.status} ${JSON.stringify(iglooResponseJson)}`);
       }
 
       // log the response details
-      console.log(`Igloohome response: ${JSON.stringify(data)}`);
+      console.log(`Igloohome response: ${JSON.stringify(iglooResponseJson)}`);
 
       // Verify that the pin exists in the response and contains 9 digits
-      if (!data.pin || !/^\d{9}$/.test(data.pin)) {
-        throw new Error(`Unexpected PIN format: ${JSON.stringify(data)}`);
+      if (!iglooResponseJson.pin || !/^\d{9}$/.test(iglooResponseJson.pin)) {
+        throw new Error(`Unexpected PIN format: ${JSON.stringify(iglooResponseJson)}`);
       }
-      return data.pin;
+      return iglooResponseJson.pin;
     }
 
     async function sendLogToLogflare(entry) {
@@ -341,6 +391,9 @@ export default async function handler(req, res) {
         console.error(`Logflare request failed: ${response.status} ${response.statusText}`);
       }
     }
+
+    // 7) Répondre à HelloAsso
+    return res.status(200).json({ sent: true });
 
   } catch (err) {
     console.error("Erreur inattendue dans le handler :", err);

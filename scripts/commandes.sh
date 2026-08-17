@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# This is a simple Bash script for executing commands
-# Author: Your Name
-# Date: $(date)
-
 echo "Welcome to the commandes.sh script!"
 
 # Get ACCESS TOKEN

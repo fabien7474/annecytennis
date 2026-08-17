@@ -1,0 +1,100 @@
+HelloAsso :{
+    "data": {
+        "payer": {
+            "email": "fabien7474@gmail.com",
+            "country": "FRA",
+            "firstName": "Fab",
+            "lastName": "Beni"
+        },
+        "items": [
+            {
+                "payments": [
+                    {
+                        "id": 91029051,
+                        "shareAmount": 500
+                    }
+                ],
+                "name": "Location d'une raquette de padel",
+                "priceCategory": "Fixed",
+                "customFields": [
+                    {
+                        "id": 6055810,
+                        "name": "Téléphone",
+                        "type": "Phone",
+                        "answer": "0628227095"
+                    },
+                    {
+                        "id": 6960318,
+                        "name": "Location pour aujourd'hui ?",
+                        "type": "YesNo",
+                        "answer": "Oui"
+                    },
+                    {
+                        "id": 6055791,
+                        "name": "Début de la location",
+                        "type": "ChoiceList",
+                        "answer": "17:30"
+                    },
+                    {
+                        "id": 6055809,
+                        "name": "Piste réservée",
+                        "type": "ChoiceList",
+                        "answer": "Padel 2"
+                    }
+                ],
+                "qrCode": "MTk5MjgyMjE5OjYzOTIyNDM2MzA0NTY4NTE1OA==",
+                "tierDescription": "",
+                "tierId": 16987683,
+                "id": 199282219,
+                "amount": 500,
+                "type": "Product",
+                "initialAmount": 500,
+                "state": "Processed"
+            }
+        ],
+        "payments": [
+            {
+                "items": [
+                    {
+                        "id": 199282219,
+                        "shareAmount": 500,
+                        "shareItemAmount": 500
+                    }
+                ],
+                "cashOutState": "Transfered",
+                "paymentReceiptUrl": "https://www.helloasso.com/associations/annecy-tennis/boutiques/location-de-raquettes-de-padel/paiement-attestation/189173439",
+                "id": 91029051,
+                "amount": 500,
+                "date": "2026-08-16T00:18:37.913804+02:00",
+                "paymentMeans": "Card",
+                "installmentNumber": 1,
+                "state": "Authorized",
+                "meta": {
+                    "createdAt": "2026-08-16T00:18:24.5685158+02:00",
+                    "updatedAt": "2026-08-16T00:18:38.0169029+02:00"
+                },
+                "refundOperations": []
+            }
+        ],
+        "amount": {
+            "total": 500,
+            "vat": 0,
+            "discount": 0
+        },
+        "id": 189173439,
+        "date": "2026-08-16T00:18:37.913804+02:00",
+        "formSlug": "location-de-raquettes-de-padel",
+        "formType": "Shop",
+        "organizationName": "Annecy Tennis",
+        "organizationSlug": "annecy-tennis",
+        "organizationType": "Association1901Rig",
+        "organizationIsUnderColucheLaw": false,
+        "meta": {
+            "createdAt": "2026-08-16T00:18:24.5685158+02:00",
+            "updatedAt": "2026-08-16T00:18:38.0166667+02:00"
+        },
+        "isAnonymous": false,
+        "isAmountHidden": false
+    },
+    "eventType": "Order"
+}
