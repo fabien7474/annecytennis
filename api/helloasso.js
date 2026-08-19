@@ -141,13 +141,13 @@ export default async function handler(req, res, {
       return res.status(200).json({ ignored: true, message: errorMsg });
     }
 
-    const locationDateStr = `${locationJour}/${locationMois}/${locationAnnee} à ${heureLocationField.answer}`;
+    const pad2 = n => n.toString().padStart(2, '0');
+    const locationDateStr = `${pad2(locationJour)}/${pad2(locationMois)}/${pad2(locationAnnee)} à ${pad2(locationHeure)}:${pad2(locationMinute)}`;
 
     // 6) Générer un code PIN
     // Calculer diffMinutes entre nowParis et location à partir des variables nowJourParis, nowMoisParis, nowAnneeParis, nowHeureParis, nowMinuteParis et locationJour, locationMois, locationAnnee, locationHeure, locationMinute
     // On passe une chaîne ISO sans offset (et non un objet Date) pour que fromZonedTime interprète les composants
     // directement comme heure de Paris, sans dépendre du fuseau horaire local du serveur (ex. Japon)
-    const pad2 = n => n.toString().padStart(2, '0');
     const debutLocation = fromZonedTime(`${locationAnnee}-${pad2(locationMois)}-${pad2(locationJour)}T${pad2(locationHeure)}:${pad2(locationMinute)}:00`, timeZoneParis);
     const diffMinutes = (nowDate.getTime() - debutLocation.getTime()) / (1000 * 60);
     console.log(`nowParisDate : ${nowDate.toString()}  - debutLocation : ${debutLocation.toString()} = diffMinutes: ${diffMinutes}`);
