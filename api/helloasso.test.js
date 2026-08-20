@@ -837,7 +837,7 @@ describe('helloasso handler', () => {
     expect(mockRes.jsonObj).toHaveProperty('sent', true);
   }, 60000);
 
-  it('should return 200 with "API désactivée" when ENABLE_CODE_PIN_GENERATION is not "1"', async () => {
+  it('should return 200 and ignored true with "API désactivée" when ENABLE_CODE_PIN_GENERATION is not "1"', async () => {
     process.env.ENABLE_CODE_PIN_GENERATION = "0";
     const req = {
       method: 'POST',
@@ -851,6 +851,8 @@ describe('helloasso handler', () => {
     };
     await handler(req, mockRes);
     expect(mockRes.statusCode).toBe(200);
+    expect(mockRes.jsonObj).toHaveProperty('ok', true);
+    expect(mockRes.jsonObj).toHaveProperty('ignored', true);
     expect(mockRes.jsonObj).toHaveProperty('message', 'API désactivée');
   }, 60000);
 
@@ -867,6 +869,7 @@ describe('helloasso handler', () => {
     };
     await handler(req, mockRes);
     expect(mockRes.statusCode).toBe(200);
+    expect(mockRes.jsonObj).toHaveProperty('ok', true);
     expect(mockRes.jsonObj).toHaveProperty('ignored', true);
   }, 60000);
 
@@ -889,7 +892,9 @@ describe('helloasso handler', () => {
     };
     await handler(req, mockRes);
     expect(mockRes.statusCode).toBe(200);
+    expect(mockRes.jsonObj).toHaveProperty('ok', true);
     expect(mockRes.jsonObj).toHaveProperty('ignored', true);
+    expect(mockRes.jsonObj).toHaveProperty('errorCode', "ITEM_NOT_FOUND");
   }, 60000);
 
   it('should return 200 and message "Email manquant" if payer email is missing', async () => {
@@ -915,21 +920,34 @@ describe('helloasso handler', () => {
     };
     await handler(req, mockRes);
     expect(mockRes.statusCode).toBe(200);
+    expect(mockRes.jsonObj).toHaveProperty('ok', true);
+    expect(mockRes.jsonObj).toHaveProperty('ignored', true);
+    expect(mockRes.jsonObj).toHaveProperty('errorCode', "PAYER_EMAIL_MISSING");
+    expect(mockRes.jsonObj).toHaveProperty('message');
     expect(mockRes.jsonObj.message).toContain('Email manquant');
   }, 60000);
 
   it('should return 200 and message for non-POST methods', async () => {
     const req = {
       method: 'GET',
-      body: {}
+      body: {
+        data: {
+          formSlug: "location-de-raquettes-de-padel",
+          payer: { email: "test@example.com" },
+          items: []
+        }
+      }
     };
     await handler(req, mockRes);
     expect(mockRes.statusCode).toBe(200);
+    expect(mockRes.jsonObj).toHaveProperty('ok', true);
+    expect(mockRes.jsonObj).toHaveProperty('ignored', true);
+    expect(mockRes.jsonObj).toHaveProperty('errorCode', "HTTP_METHOD_NOT_ALLOWED");
     expect(mockRes.jsonObj).toHaveProperty('message');
     expect(mockRes.jsonObj.message).toMatch(/Méthode GET non autorisée/);
   }, 60000);
 
-  it('should return 200 and error on unexpected exception', async () => {
+  it('should return 200 and error on unexpected exception if not well configured', async () => {
     // Simulate error by deleting process.env.SMTP_HOST
     const oldHost = process.env.SMTP_HOST;
     delete process.env.SMTP_HOST;
@@ -956,8 +974,11 @@ describe('helloasso handler', () => {
     };
 
     await handler(req, mockRes);
-    expect(mockRes.statusCode).toBe(200);
-    expect(mockRes.jsonObj).toHaveProperty('error', 'Internal Server Error');
+    expect(mockRes.statusCode).toBe(500);
+    expect(mockRes.jsonObj).toHaveProperty('ok', false);
+    expect(mockRes.jsonObj).toHaveProperty('ignored', true);
+    expect(mockRes.jsonObj).toHaveProperty('errorCode', "INTERNAL_SERVER_ERROR");
+    expect(mockRes.jsonObj).toHaveProperty('message', 'Internal Server Error');
 
     process.env.SMTP_HOST = oldHost;
   }, 60000);

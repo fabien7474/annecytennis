@@ -36,7 +36,8 @@ export default async function handler(req, res, {
 
     // 0 Sortir si pas enabled
     if (!CONFIG.enabled) {
-      return res.status(200).json({ message: "API désactivée" });
+      console.log("API désactivée via ENABLE_CODE_PIN_GENERATION=0");
+      return res.status(200).json({ ok: true, ignored: true, message: "API désactivée" });
     }
     const transporter = nodemailer.createTransport({
       host: CONFIG.host,
@@ -48,22 +49,22 @@ export default async function handler(req, res, {
       },
     });
 
-    // 1) Refuser tout sauf POST
-    if (req.method !== "POST") {
-      const errorMsg = `Méthode ${req.method} non autorisée`;
-      await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
-    }
-
-    // 2) Payload JSON déjà parsé par Vercel
+    // 1) Payload JSON déjà parsé par Vercel
     const payload = req.body;
     const payoadJson = JSON.stringify(payload, null, 2);
     const payloadData = payload?.data;
-    const matchFormSlug = payloadData?.formSlug == "location-de-raquettes-de-padel"
+    const matchFormSlug = payloadData?.formSlug === "location-de-raquettes-de-padel";
     if (!matchFormSlug) {
-      const errorMsg = `FormSlug non géré : ${payloadData?.formSlug}`;
-      await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      const message = `FormSlug non géré : ${payloadData?.formSlug}`;
+      console.log(message);
+      return res.status(200).json({ ok: true, ignored: true, message: message });
+    }
+
+    // 2) Refuser tout sauf POST
+    if (req.method !== "POST") {
+      const errorMsg = `Méthode ${req.method} non autorisée`;
+      logError(errorMsg);
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "HTTP_METHOD_NOT_ALLOWED", message: errorMsg });
     }
 
     // 3) Extract un des items "Location d'une ou plusieurs raquettes de padel"
@@ -82,7 +83,7 @@ export default async function handler(req, res, {
     if (!matchedItem) {
       const errorMsg = `Aucun item correspondant trouvé dans le payload (tierId attendu : ${tierIdItemUneRaquette}, ${tierIdItemDeuxRaquettes}, ${tierIdItemTroisRaquettes}, ${tierIdItemQuatreRaquettes} ; state attendu : ${stateItem})`;
       await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "ITEM_NOT_FOUND", message: errorMsg });
     }
     console.log("Notification à traiter :", payoadJson);
 
@@ -92,7 +93,7 @@ export default async function handler(req, res, {
     if (!payerEmail) {
       const errorMsg = `Email manquant ou invalide. email = ${payerEmail}`;
       await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "PAYER_EMAIL_MISSING", message: errorMsg });
     }
 
     // 5) Extraire locationAujourdhui, jourLocationField et heureLocationField depuis matchedItem.customFields
@@ -111,7 +112,7 @@ export default async function handler(req, res, {
     if (((!jourLocationField) && !locationAujourdhuiBool) || !heureLocationField) {
       const errorMsg = `Champs personnalisés manquants ou invalides. locationAujourdhuiBool = ${locationAujourdhuiBool}, jourLocationField = ${JSON.stringify(jourLocationField)}, heureLocationField = ${JSON.stringify(heureLocationField)}`;
       await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "CUSTOM_FIELDS_INVALID", message: errorMsg });
     }
     // Calculer locationDate
     //Si locationAujourd'hui égale à "Oui" alors remplacer jourLocation par la date du jour
@@ -131,14 +132,14 @@ export default async function handler(req, res, {
       if (Number.isNaN(locationJour) || Number.isNaN(locationMois) || Number.isNaN(locationAnnee)) {
         const errorMsg = `Date location format invalide: ${jourLocationField.answer}`;
         await logError(errorMsg);
-        return res.status(200).json({ ignored: true, message: errorMsg });
+        return res.status(200).json({ ok: true, ignored: true, errorCode: "CUSTOM_FIELDS_INVALID", message: errorMsg });
       }
     }
     const [locationHeure, locationMinute] = heureLocationField.answer.split(":").map(Number);
     if (Number.isNaN(locationHeure) || Number.isNaN(locationMinute)) {
       const errorMsg = `Heure location format invalide: ${heureLocationField.answer}`;
       await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "CUSTOM_FIELDS_INVALID", message: errorMsg });
     }
 
     const pad2 = n => n.toString().padStart(2, '0');
@@ -155,7 +156,7 @@ export default async function handler(req, res, {
       const errorMsg = `Debut de location est trop dans le passé de ${diffMinutes} minutes (nowParisTZ: ${nowDate.toString()}  - debutLocation : ${debutLocation.toString()})`;
       await envoyerEmailAuPayeur(errorMsg);
       await logError(errorMsg);
-      return res.status(200).json({ ignored: true, message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "LOCATION_TOO_FAR_IN_PAST", message: errorMsg });
     }
 
     // Calculer debutPinCode
@@ -179,7 +180,7 @@ export default async function handler(req, res, {
     } catch (err) {
       const errorMsg = `Erreur lors de l'acquisition de l'access token Igloohome : ${err.message}`;
       await logError(errorMsg);
-      return res.status(200).json({ status: "error", message: errorMsg });
+      return res.status(200).json({ ok: true, ignored: true, errorCode: "IGLOOHOME_ACCESS_TOKEN_ERROR", message: errorMsg });
     }
 
     // Créer le code PIN via l’API Igloohome
@@ -210,14 +211,14 @@ export default async function handler(req, res, {
         if (codePinOuverture === codePinFermeture) {
           const errorMsg = `Erreur : les codes PIN one-time ouverture et fermeture sont identiques : ${codePinOuverture}`;
           await logError(errorMsg);
-          return res.status(200).json({ status: "error", message: errorMsg });
+          return res.status(200).json({ ok: true, ignored: true, errorCode: "IGLOOHOME_CREATE_PIN_ERROR", message: errorMsg });
         }
         pinInstructions = `Code PIN d'ouverture : ${codePinOuverture} (utilisable une seule fois pour ouvrir le coffret)\n
   Code PIN de fermeture : ${codePinFermeture} (utilisable une seule fois pour refermer le coffret)`;
         console.log(`Codes PIN one-time générés pour ${payerEmail} : ouverture=${codePinOuverture}, fermeture=${codePinFermeture}`);
       } catch (fallbackErr) {
         await logError(`Erreur lors de la création des codes PIN one-time via l'API Igloohome : ${fallbackErr.message}`);
-        return res.status(200).json({ status: "error", message: "Erreur lors de la génération du code PIN" });
+        return res.status(200).json({ ok: true, ignored: true, errorCode: "IGLOOHOME_CREATE_PIN_ERROR", message: "Erreur lors de la génération du code PIN" });
       }
     }
     console.log(`Code PIN généré pour ${payerEmail} : ${codePin}`);
@@ -456,7 +457,7 @@ export default async function handler(req, res, {
 
   } catch (err) {
     console.error("Erreur inattendue dans le handler :", err);
-    return res.status(200).json({ error: "Internal Server Error" });
+    return res.status(500).json({ ok: false, ignored: true, errorCode: "INTERNAL_SERVER_ERROR", message: "Internal Server Error" });
   }
 }
 
