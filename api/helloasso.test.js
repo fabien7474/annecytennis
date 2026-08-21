@@ -35,6 +35,7 @@ describe('helloasso handler', () => {
     process.env.ACCUEIL_EMAIL = "fabien7474@gmail.com";
     process.env.LOGFLARE_API_KEY = "KIlcuqX-6Agi";
     process.env.LOGFLARE_SOURCE = "d55db3ef-26e0-4e89-a7d8-1dc276575d31";
+    process.env.ENABLE_BREVO_SMS = "0";
 
     // Reset shared variables before each test
     mockRes = createMockResponse();

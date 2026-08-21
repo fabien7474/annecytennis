@@ -10,6 +10,7 @@
 import * as dateFnsTz from 'date-fns-tz';
 import fetch from "node-fetch";
 import nodemailer from "nodemailer";
+import { normalizePhoneNumber, sendBrevoSms } from './brevo-sms.js';
 const { fromZonedTime } = dateFnsTz;
 
 export default async function handler(req, res, {
@@ -30,6 +31,9 @@ export default async function handler(req, res, {
     iglooDeviceId: process.env.IGLOO_DEVICE_ID,
     iglooClientId: process.env.IGLOO_CLIENT_ID,
     iglooClientSecret: process.env.IGLOO_CLIENT_SECRET,
+    brevoSmsEnabled: process.env.ENABLE_BREVO_SMS === "1",
+    brevoApiKey: process.env.BREVO_API_KEY,
+    brevoSmsSender: process.env.BREVO_SMS_SENDER,
   };
 
   try {
@@ -101,6 +105,7 @@ export default async function handler(req, res, {
     customFields = matchedItem?.customFields || [];
     const locationAujourdhui = customFields.find(f => f.id === 6960318);
     console.log(`Champ personnalisé "Location aujourd'hui" : ${JSON.stringify(locationAujourdhui)}`);
+    const phoneField = customFields.find(f => f.id === 6055810 || f.name === "Téléphone" || f.type === "Phone");
     const jourLocationField = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
     console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocationField)}`);
     const heureLocationField = customFields.find(f => f.name === "Début de la location");
@@ -184,11 +189,12 @@ export default async function handler(req, res, {
     }
 
     // Créer le code PIN via l’API Igloohome
-    let pinInstructions;
+    let pinInstructions, pinSmsInstructions;
     try {
       const hourlyPinGenerator = createHourlyPinOverride || createHourlyPin;
       codePin = await hourlyPinGenerator(accessToken, debutPinCode, payerEmail);
       pinInstructions = `Voici votre code PIN à utiliser pour ouvrir et refermer le coffret : ${codePin}`;
+      pinSmsInstructions = `PIN : ${codePin}`;
     } catch (err) {
       // On essaie à nouveau avec un one-time algoPIN code pour ouvrir et un autre one-time algoPIN code pour fermer.
       // On utilise https://api.igloodeveloper.co/igloohome/devices/{deviceId}/algopin/onetime
@@ -215,6 +221,7 @@ export default async function handler(req, res, {
         }
         pinInstructions = `Code PIN d'ouverture : ${codePinOuverture} (utilisable une seule fois pour ouvrir le coffret)\n
   Code PIN de fermeture : ${codePinFermeture} (utilisable une seule fois pour refermer le coffret)`;
+          pinSmsInstructions = `PIN ouverture : ${codePinOuverture}\nPIN fermeture : ${codePinFermeture}`;
         console.log(`Codes PIN one-time générés pour ${payerEmail} : ouverture=${codePinOuverture}, fermeture=${codePinFermeture}`);
       } catch (fallbackErr) {
         await logError(`Erreur lors de la création des codes PIN one-time via l'API Igloohome : ${fallbackErr.message}`);
@@ -257,6 +264,28 @@ export default async function handler(req, res, {
   Le club Annecy Tennis`,
     });
     console.log(`E‑mail envoyé à ${payerEmail} (codePin: ${codePin})`);
+
+    let smsSent = false;
+    if (CONFIG.brevoSmsEnabled) {
+      const smsRecipient = normalizePhoneNumber(phoneField?.answer);
+      if (!smsRecipient) {
+        logError('SMS Brevo non envoyé : téléphone payeur manquant ou invalide');
+      } else {
+        try {
+          const messageId = await sendBrevoSms({
+            apiKey: CONFIG.brevoApiKey,
+            sender: CONFIG.brevoSmsSender,
+            recipient: smsRecipient,
+            content: `${pinSmsInstructions}\nLocation : ${locationDateStr}`,
+          });
+          smsSent = true;
+          console.log(`SMS Brevo envoyé (messageId: ${messageId})`);
+        } catch (err) {
+          logError(`SMS Brevo non envoyé : ${err.message}`);
+        }
+      }
+    }
+
     // Si l’option « Accueil » est cochée, envoyer un e‑mail à l’accueil
     const hasOptionAccueil = matchedItem?.options?.some(opt => opt.optionId === 18137239) || false;
     if (hasOptionAccueil) {
@@ -452,7 +481,7 @@ export default async function handler(req, res, {
     }
 
     // 7) Répondre à HelloAsso
-    return res.status(200).json({ sent: true });
+    return res.status(200).json({ sent: true, smsSent });
 
 
   } catch (err) {
