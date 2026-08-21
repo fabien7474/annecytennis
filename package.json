@@ -13,6 +13,7 @@
     "jest": "^30.1.3"
   },
   "scripts": {
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+    "test:brevo:sms": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js api/brevo-sms.local.test.js"
   }
 }
