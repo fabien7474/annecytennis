@@ -106,7 +106,6 @@ export default async function handler(req, res, {
     const locationAujourdhui = customFields.find(f => f.id === 6960318);
     console.log(`Champ personnalisé "Location aujourd'hui" : ${JSON.stringify(locationAujourdhui)}`);
     const phoneField = customFields.find(f => f.id === 6055810 || f.name === "Téléphone" || f.type === "Phone");
-    const courtField = customFields.find(f => f.id === 6055809 || f.name === "Piste réservée");
     const jourLocationField = customFields.find(f => f.name === "Jour de la location (si pas aujourd'hui)");
     console.log(`Champ personnalisé "Jour de la location" : ${JSON.stringify(jourLocationField)}`);
     const heureLocationField = customFields.find(f => f.name === "Début de la location");
@@ -277,11 +276,7 @@ export default async function handler(req, res, {
             apiKey: CONFIG.brevoApiKey,
             sender: CONFIG.brevoSmsSender,
             recipient: smsRecipient,
-            content: [
-              pinSmsInstructions,
-              courtField?.answer ? `Piste : ${courtField.answer}` : null,
-              `Location : ${locationDateStr}`,
-            ].filter(Boolean).join('\n'),
+            content: `${pinSmsInstructions}\nLocation : ${locationDateStr}`,
           });
           smsSent = true;
           console.log(`SMS Brevo envoyé (messageId: ${messageId})`);
